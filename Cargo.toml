@@ -1,0 +1,25 @@
+[package]
+name = "apache_arrow_utils"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.97"
+arrow = { git = "https://github.com/apache/arrow-rs", features = [
+    "ipc",
+    "prettyprint",
+] }
+lipid = { git = "https://github.com/ippras/lipid", branch = "single", features = [
+    "polars",
+] }
+parquet = { git = "https://github.com/apache/arrow-rs", features = [
+    "arrow",
+    "json",
+] }
+polars = { version = "0.46.0", features = [
+    "dtype-full",
+    "fmt_no_tty",
+    "ipc",
+    "parquet",
+] }
+polars-arrow = { version = "0.46.0" }
