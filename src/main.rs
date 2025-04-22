@@ -40,6 +40,11 @@ fn main() -> Result<()> {
     to_parquet()
 }
 
+#[test]
+fn read() -> Result<()> {
+    ipc::read("D:/g/git/ippras/hmfa/src/presets/ippras/C70_Control.hmf.ipc")
+}
+
 fn to_ipc() -> Result<()> {
     let fatty_acid = df! {
         "FattyAcid" => [
