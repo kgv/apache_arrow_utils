@@ -20,52 +20,80 @@ use parquet::{
         reader::{FileReader as _, SerializedFileReader},
         writer::SerializedFileWriter,
     },
+    format::KeyValue,
     schema::{parser::parse_message_type, printer::print_parquet_metadata},
 };
 use polars::prelude::{DataFrame, ParquetReader, ParquetWriter, SerReader};
+use polars_arrow::array::ViewType;
 use std::{fs::File, io::stdout, path::Path, sync::Arc};
 
-pub(super) fn metadata(path: impl AsRef<Path>) -> Result<()> {
-    let mut metadata = read_metadata_from_local_file(&path)?;
-    print_parquet_metadata(&mut stdout(), &metadata);
-    metadata = prepare_metadata(metadata);
-    print_parquet_metadata(&mut stdout(), &metadata);
-    write_metadata_to_local_file(metadata, &path)?;
+// https://github.com/apache/arrow-rs/blob/main/parquet/examples/external_metadata.rs
+pub(super) fn metadata(path: impl AsRef<Path>, custom_metadata: Metadata) -> Result<()> {
+    print_metadata(&path)?;
+    let mut metadata = read_metadata(&path)?;
+    // metadata = prepare_metadata(metadata, custom_metadata);
+    write_metadata(metadata, "TEST2.parquet")?;
+    print_metadata(&path)?;
     Ok(())
 }
 
-// https://github.com/apache/arrow-rs/blob/main/parquet/examples/external_metadata.rs
+pub(super) fn print_metadata(path: impl AsRef<Path>) -> Result<()> {
+    let metadata = read_metadata(&path)?;
+    println!("file_metadata: {:#?}", metadata.file_metadata());
+    print_parquet_metadata(&mut stdout(), &metadata);
+    Ok(())
+}
 
 /// Reads the metadata from a file
 ///
 /// This function reads the format written by `write_metadata_to_file`
-fn read_metadata_from_local_file(path: impl AsRef<Path>) -> Result<ParquetMetaData> {
+fn read_metadata(path: impl AsRef<Path>) -> Result<ParquetMetaData> {
     let file = File::open(path)?;
     Ok(ParquetMetaDataReader::new()
-        .with_page_indexes(true)
+        // .with_page_indexes(true)
+        // .with_column_indexes(true)
+        // .with_offset_indexes(true)
         .parse_and_finish(&file)?)
 }
 
 /// writes the metadata to a file
 ///
 /// The data is stored using the same thrift format as the Parquet file metadata
-fn write_metadata_to_local_file(metadata: ParquetMetaData, path: impl AsRef<Path>) -> Result<()> {
+fn write_metadata(metadata: ParquetMetaData, path: impl AsRef<Path>) -> Result<()> {
     let file = File::create(path)?;
     Ok(ParquetMetaDataWriter::new(file, &metadata).finish()?)
 }
 
-fn prepare_metadata(metadata: ParquetMetaData) -> ParquetMetaData {
+fn prepare_metadata(metadata: ParquetMetaData, mut custom_metadata: Metadata) -> ParquetMetaData {
+    // let created_by = format!(
+    //     "{} version {}",
+    //     env!("CARGO_PKG_NAME"),
+    //     env!("CARGO_PKG_VERSION"),
+    // );
     let file_metadata = metadata.file_metadata();
-    let file_metadata = FileMetaData::new(
-        file_metadata.version(),
-        file_metadata.num_rows(),
-        None,
-        file_metadata.key_value_metadata().map(ToOwned::to_owned),
-        file_metadata.schema_descr_ptr(),
-        file_metadata.column_orders().map(ToOwned::to_owned),
-    );
-    let mut builder = ParquetMetaDataBuilder::new_from_metadata(metadata);
-    builder.builder.build()
+    // let mut key_value_metadata = file_metadata
+    //     .key_value_metadata()
+    //     .cloned()
+    //     .unwrap_or_default();
+    // for (key, value) in key_value.into_iter() {
+    //     if !value.is_empty() {
+    //         key_value_metadata.push(KeyValue::new(key, Some(value)));
+    //     }
+    // }
+    // let file_metadata = FileMetaData::new(
+    //     file_metadata.version(),
+    //     file_metadata.num_rows(),
+    //     Some(created_by),
+    //     Some(key_value_metadata),
+    //     file_metadata.schema_descr_ptr(),
+    //     file_metadata.column_orders().cloned(),
+    // );
+    let mut builder = metadata.into_builder();
+    // let builder = ParquetMetaDataBuilder::new(file_metadata.clone());
+    // .set_row_groups(builder.take_row_groups());
+    // .set_column_index(builder.take_column_index())
+    // .set_offset_index(builder.take_offset_index());
+    builder.build()
 }
 
 fn process_metadata(metadata: &ParquetMetaData) -> ParquetMetaData {
@@ -106,7 +134,7 @@ fn process_metadata(metadata: &ParquetMetaData) -> ParquetMetaData {
 //     Ok(())
 // }
 
-pub(super) fn read_via_polars(path: impl AsRef<Path>) -> Result<()> {
+pub(super) fn read_polars(path: impl AsRef<Path>) -> Result<()> {
     let file = File::open(path)?;
     let mut reader = ParquetReader::new(file).set_rechunk(true);
     let meta = reader.get_metadata()?;
@@ -118,7 +146,7 @@ pub(super) fn read_via_polars(path: impl AsRef<Path>) -> Result<()> {
     Ok(())
 }
 
-pub(super) fn write_via_polars(
+pub(super) fn write_polars(
     path: impl AsRef<Path>,
     _meta: Metadata,
     data: &mut DataFrame,

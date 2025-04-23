@@ -1,0 +1,95 @@
+version: 1
+num of rows: 4
+created by: Polars
+metadata:
+  ARROW:schema: /////94BAAAEAAAA8v///xQAAAAEAAEAAAAKAAsACAAKAAQA+P///wwAAAAIAAgAAAAEAAMAAACsAAAAWAAAAAQAAADs////MAAAACAAAAAYAAAAAQMAABAAEgAEABAAEQAIAAAADAAAAAAA+v///wIABgAGAAQAFQAAAFN0ZXJlb3NwZWNpZmljTnVtYmVyMgAAAOz///8wAAAAIAAAABgAAAABAwAAEAASAAQAEAARAAgAAAAMAAAAAAD6////AgAGAAYABAAXAAAAU3RlcmVvc3BlY2lmaWNOdW1iZXIxMjMA7P////AAAADkAAAAGAAAAAEVAAAQABIABAAQABEACAAAAAwAAQAAAAQAAADm////sAAAAKQAAACAAAAAeAAAABgAAAABGBIAGgAEABgAGQAIAAwAEAAUAAEAAAAEAAAA9P///zwAAAAMAAAACAAMAAQACAAkAAAAMTtTMTtEMjtEQzI7RFQxO1QyO1RDMjtUVDE7VTI7VUMyO1VUAAAAAA8AAABfUExfRU5VTV9WQUxVRVMAAAAAAPj///8MAAAACAAIAAAABAD2////IAAAAAAABgAIAAQA/P///wQABAAEAAAAaXRlbQAAAAD8////BAAEAAkAAABGYXR0eUFjaWQA
+message root {
+  OPTIONAL group FattyAcid (LIST) {
+    REPEATED group list {
+      OPTIONAL BYTE_ARRAY element (STRING);
+    }
+  }
+  OPTIONAL DOUBLE StereospecificNumber123;
+  OPTIONAL DOUBLE StereospecificNumber2;
+}
+
+
+num of row groups: 1
+row groups:
+
+row group 0:
+--------------------------------------------------------------------------------
+total byte size: 298
+num of rows: 4
+
+num of columns: 3
+columns: 
+
+column 0:
+--------------------------------------------------------------------------------
+column type: BYTE_ARRAY
+column path: "FattyAcid.list.element"
+encodings: PLAIN RLE RLE_DICTIONARY
+file path: N/A
+file offset: 148
+num of values: 66
+compression: ZSTD
+total compressed size (in bytes): 144
+total uncompressed size (in bytes): 140
+data page offset: 4
+index page offset: N/A
+dictionary page offset: N/A
+statistics: {min: [68], max: [85, 84], distinct_count: N/A, null_count: 0, min_max_deprecated: false, max_value_exact: false, min_value_exact: false}
+bloom filter offset: N/A
+bloom filter length: N/A
+offset index offset: 599
+offset index length: 12
+column index offset: 519
+column index length: 18
+
+
+column 1:
+--------------------------------------------------------------------------------
+column type: DOUBLE
+column path: "StereospecificNumber123"
+encodings: PLAIN RLE
+file path: N/A
+file offset: 293
+num of values: 4
+compression: ZSTD
+total compressed size (in bytes): 88
+total uncompressed size (in bytes): 79
+data page offset: 205
+index page offset: N/A
+dictionary page offset: N/A
+statistics: {min: 0.21, max: 21.45, distinct_count: N/A, null_count: 0, min_max_deprecated: false, max_value_exact: true, min_value_exact: true}
+bloom filter offset: N/A
+bloom filter length: N/A
+offset index offset: 611
+offset index length: 12
+column index offset: 537
+column index length: 31
+
+
+column 2:
+--------------------------------------------------------------------------------
+column type: DOUBLE
+column path: "StereospecificNumber2"
+encodings: PLAIN RLE
+file path: N/A
+file offset: 451
+num of values: 4
+compression: ZSTD
+total compressed size (in bytes): 88
+total uncompressed size (in bytes): 79
+data page offset: 363
+index page offset: N/A
+dictionary page offset: N/A
+statistics: {min: 1.25, max: 60.4, distinct_count: N/A, null_count: 0, min_max_deprecated: false, max_value_exact: true, min_value_exact: true}
+bloom filter offset: N/A
+bloom filter length: N/A
+offset index offset: 623
+offset index length: 12
+column index offset: 568
+column index length: 31
+
