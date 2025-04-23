@@ -12,7 +12,10 @@ use arrow::{
 use parquet::{
     arrow::{ArrowWriter, arrow_reader::ParquetRecordBatchReaderBuilder},
     file::{
-        metadata::{FileMetaData, ParquetMetaData},
+        metadata::{
+            FileMetaData, ParquetMetaData, ParquetMetaDataBuilder, ParquetMetaDataReader,
+            ParquetMetaDataWriter,
+        },
         properties::WriterProperties,
         reader::{FileReader as _, SerializedFileReader},
         writer::SerializedFileWriter,
@@ -22,60 +25,47 @@ use parquet::{
 use polars::prelude::{DataFrame, ParquetReader, ParquetWriter, SerReader};
 use std::{fs::File, io::stdout, path::Path, sync::Arc};
 
-pub(super) fn read(path: impl AsRef<Path>) -> Result<()> {
-    let input = path.as_ref();
-    let output = "OUTPUT.parquet";
-    let reader = SerializedFileReader::new(File::open(input)?)?;
-    let metadata = reader.metadata();
-    print_parquet_metadata(&mut stdout(), metadata);
-    for row in reader {
-        println!("{}", row?);
-    }
-    // let message_type = "
-    //     message schema {
-    //         OPTIONAL group FattyAcid (LIST) {
-    //             REPEATED group list {
-    //                 OPTIONAL BYTE_ARRAY element (STRING);
-    //             }
-    //         }
-    //         OPTIONAL DOUBLE StereospecificNumber123;
-    //         OPTIONAL DOUBLE StereospecificNumber2;
-    //     }
-    // ";
-    // let schema = Arc::new(parse_message_type(message_type)?);
-    // let mut writer = SerializedFileWriter::new(File::create(output)?, schema, Default::default())?;
-    // let writer_properties = WriterProperties::builder()
-    //     .set_key_value_metadata(
-    //         metadata
-    //             .file_metadata()
-    //             .key_value_metadata()
-    //             .map(ToOwned::to_owned),
-    //     )
-    //     .build();
-    // for i in 0..metadata.num_row_groups() {
-    //     let row_group_reader = reader.get_row_group(i)?;
-    //     let row_group_metadata = metadata.row_group(i);
-    //     let mut row_group_writer = writer.next_row_group()?;
-    //     // if let Some(mut column_writer) = row_group_writer.next_column()? {
-    //     //     let columns = row_group_reader.get_column_reader().into_columns();
-    //     //     column_writer.typed().write_batch(&columns.1, None, None)?;
-    //     // }
-    //     // column_writer.typed().write_batch(
-    //     //     &row_group_reader.get_column_reader(0)?,
-    //     //     None,
-    //     //     None,
-    //     // )?;
-    //     // let columns = row_group_reader.get_column_reader().into_columns();
-    //     //
-    //     row_group_writer.close()?;
-    // }
-    // // while let Some(mut column_writer) = row_group_writer.next_column()? {
-    // //     let columns = row?.get_column_iter().into_columns();
-    // //     column_writer.typed().write_batch(&columns.1, None, None)?;
-    // //     column_writer.close()?;
-    // // }
-    // writer.close()?;
+pub(super) fn metadata(path: impl AsRef<Path>) -> Result<()> {
+    let mut metadata = read_metadata_from_local_file(&path)?;
+    print_parquet_metadata(&mut stdout(), &metadata);
+    metadata = prepare_metadata(metadata);
+    print_parquet_metadata(&mut stdout(), &metadata);
+    write_metadata_to_local_file(metadata, &path)?;
     Ok(())
+}
+
+// https://github.com/apache/arrow-rs/blob/main/parquet/examples/external_metadata.rs
+
+/// Reads the metadata from a file
+///
+/// This function reads the format written by `write_metadata_to_file`
+fn read_metadata_from_local_file(path: impl AsRef<Path>) -> Result<ParquetMetaData> {
+    let file = File::open(path)?;
+    Ok(ParquetMetaDataReader::new()
+        .with_page_indexes(true)
+        .parse_and_finish(&file)?)
+}
+
+/// writes the metadata to a file
+///
+/// The data is stored using the same thrift format as the Parquet file metadata
+fn write_metadata_to_local_file(metadata: ParquetMetaData, path: impl AsRef<Path>) -> Result<()> {
+    let file = File::create(path)?;
+    Ok(ParquetMetaDataWriter::new(file, &metadata).finish()?)
+}
+
+fn prepare_metadata(metadata: ParquetMetaData) -> ParquetMetaData {
+    let file_metadata = metadata.file_metadata();
+    let file_metadata = FileMetaData::new(
+        file_metadata.version(),
+        file_metadata.num_rows(),
+        None,
+        file_metadata.key_value_metadata().map(ToOwned::to_owned),
+        file_metadata.schema_descr_ptr(),
+        file_metadata.column_orders().map(ToOwned::to_owned),
+    );
+    let mut builder = ParquetMetaDataBuilder::new_from_metadata(metadata);
+    builder.builder.build()
 }
 
 fn process_metadata(metadata: &ParquetMetaData) -> ParquetMetaData {

@@ -1,3 +1,5 @@
+#![feature(path_file_prefix)]
+
 use anyhow::Result;
 use lipid::prelude::*;
 use polars::prelude::{
@@ -7,8 +9,9 @@ use polars_arrow::array::Utf8ViewArray;
 use std::{
     borrow::BorrowMut,
     collections::BTreeMap,
+    ffi::OsStr,
     fs::File,
-    path::Path,
+    path::{Path, PathBuf},
     sync::{Arc, LazyLock},
 };
 // use parquet::arrow::{DataType, Field, Schema};
@@ -36,16 +39,20 @@ pub const BOUND_DATA_TYPE: LazyLock<polars::prelude::DataType> = LazyLock::new(|
 // https://github.com/apache/arrow-nanoarrow/issues/743
 // https://github.com/apache/arrow-rs/issues/7058
 fn main() -> Result<()> {
-    // to_ipc()
-    to_parquet()
+    // let folder = "D:/g/git/ippras/hmfa/src/presets/ippras/";
+    let folder = "D:/git/ippras/hmfa/src/presets/ippras/";
+    let file = "C70_Control.hmf.ipc";
+    let mut path = PathBuf::from(folder);
+    path.push(file);
+    println!("path: {}", path.display());
+    // ipc::read(path)?;
+    parquet::metadata("C70_Control.hmfa.parquet")?;
+    // to_ipc(path)?;
+    // to_parquet(path)?;
+    Ok(())
 }
 
-#[test]
-fn read() -> Result<()> {
-    ipc::read("D:/g/git/ippras/hmfa/src/presets/ippras/C70_Control.hmf.ipc")
-}
-
-fn to_ipc() -> Result<()> {
+fn to_ipc(path: impl AsRef<Path>) -> Result<()> {
     let fatty_acid = df! {
         "FattyAcid" => [
             Some(Series::from_iter(C16U0).cast(&BOUND_DATA_TYPE)?),
@@ -54,9 +61,9 @@ fn to_ipc() -> Result<()> {
             Some(Series::from_iter(C18U3DC9DC12DC15).cast(&BOUND_DATA_TYPE)?),
         ],
     }?;
-    let path = Path::new("D:/g/git/ippras/hmfa/src/presets/ippras/C70_Control.hmf.ipc");
-    assert!(matches!(path.extension(), Some(extension) if extension == "ipc"));
-    let (mut meta, data) = ipc::read_polars(path)?;
+    let input = path.as_ref();
+    assert!(matches!(input.extension(), Some(extension) if extension == "ipc"));
+    let (mut meta, data) = ipc::read_polars(input)?;
     println!("metadata: {meta:#?}");
     meta.retain(|_key, value| !value.is_empty());
     println!("metadata: {meta:#?}");
@@ -66,13 +73,15 @@ fn to_ipc() -> Result<()> {
     // data = data.select_by_range(1..)?;
     println!("data_frame: {data}");
     data.align_chunks(); // !!!
-    ipc::write_polars("output.hmfa.arrow", meta, &mut data)?;
-    ipc::read_polars("output.hmfa.arrow")?;
-    ipc::read("output.hmfa.arrow")?;
+    let output = PathBuf::from(input.file_prefix().unwrap_or(OsStr::new("output")))
+        .with_extension("hmfa.arrow");
+    ipc::write_polars(&output, meta, &mut data)?;
+    ipc::read_polars(&output)?;
+    ipc::read(&output)?;
     Ok(())
 }
 
-fn to_parquet() -> Result<()> {
+fn to_parquet(path: impl AsRef<Path>) -> Result<()> {
     let fatty_acid = df! {
         "FattyAcid" => [
             Some(Series::from_iter(C16U0).cast(&BOUND_DATA_TYPE)?),
@@ -81,9 +90,9 @@ fn to_parquet() -> Result<()> {
             Some(Series::from_iter(C18U3DC9DC12DC15).cast(&BOUND_DATA_TYPE)?),
         ],
     }?;
-    let path = Path::new("D:/g/git/ippras/hmfa/src/presets/ippras/C70_Control.hmf.ipc");
-    assert!(matches!(path.extension(), Some(extension) if extension == "ipc"));
-    let (mut meta, data) = ipc::read_polars(path)?;
+    let input = path.as_ref();
+    assert!(matches!(input.extension(), Some(extension) if extension == "ipc"));
+    let (mut meta, data) = ipc::read_polars(input)?;
     println!("metadata: {meta:#?}");
     meta.retain(|_key, value| !value.is_empty());
     println!("metadata: {meta:#?}");
@@ -91,9 +100,11 @@ fn to_parquet() -> Result<()> {
     let mut data = fatty_acid.hstack(&data.get_columns()[1..])?;
     println!("data_frame: {data}");
     data.align_chunks(); // !!!
-    parquet::write_via_polars("output.hmfa.parquet", meta, &mut data)?;
-    parquet::read_via_polars("output.hmfa.parquet")?;
-    parquet::read("output.hmfa.parquet")?;
+    let output = PathBuf::from(input.file_prefix().unwrap_or(OsStr::new("output")))
+        .with_extension("hmfa.parquet");
+    parquet::write_via_polars(&output, meta, &mut data)?;
+    parquet::read_via_polars(&output)?;
+    // parquet::read(&output)?;
     Ok(())
 }
 
