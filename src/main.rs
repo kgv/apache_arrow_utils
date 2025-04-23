@@ -43,31 +43,37 @@ pub const BOUND_DATA_TYPE: LazyLock<polars::prelude::DataType> = LazyLock::new(|
 
 fn main() -> Result<()> {
     // unsafe { std::env::set_var("POLARS_FMT_MAX_COLS", "256") };
-    // unsafe { std::env::set_var("POLARS_FMT_MAX_ROWS", "32") };
+    unsafe { std::env::set_var("POLARS_FMT_MAX_ROWS", "256") };
     unsafe { std::env::set_var("POLARS_FMT_TABLE_CELL_LIST_LEN", "256") };
     unsafe { std::env::set_var("POLARS_FMT_STR_LEN", "256") };
 
     // let folder = "D:/git/ippras/hmfa/src/presets/ippras/";
-    let folder = "D:/g/git/ippras/hmfa/src/presets/ippras/";
+    // let folder = "D:/g/git/ippras/hmfa/src/presets/ippras/";
     // let file = "C70_Control.hmf.ipc";
     // let file = "C70_H2O2.hmf.ipc";
     // let file = "C70_NaCl.hmf.ipc";
     // let file = "H242_-N.0.0.1.hmf.ipc";
     // let file = "H242_-N.0.0.2.hmf.ipc";
     // let file = "H242_-N.0.0.3.hmf.ipc";
-    let file = "H242_-N.hmf.ipc";
+    // let file = "H242_-N.hmf.ipc";
+    let folder = "D:/g/git/ippras/hmfa/src/presets/10.1021/jf903048p/";
+    let file = "MatureMilkFat.ipc";
 
     let mut path = PathBuf::from(folder);
     path.push(file);
     println!("path: {}", path.display());
 
+    let (mut meta, data) = ipc::polars::read(path)?;
+    println!("data: {:?}", data.schema());
+    println!("data: {data}");
+
     // let output = to_parquet(&path)?;
     // parquet::metadata(output, custom_metadata)?;
     // parquet::read(&output)?;
 
-    let output = ipc_to_ipc(path)?;
-    println!("to_ipc: {output:?}");
-    ipc::polars::read(&output)?;
+    // let output = ipc_to_ipc(path)?;
+    // println!("to_ipc: {output:?}");
+    // ipc::polars::read(&output)?;
     // ipc::arrow::read(&output)?;
 
     Ok(())
@@ -87,14 +93,36 @@ fn ipc_to_ipc(input: impl AsRef<Path>) -> Result<PathBuf> {
 
     let fatty_acid = df! {
         "FattyAcid" => [
+            Some(Series::from_iter(C10U0).cast(&BOUND_DATA_TYPE)?),
+            Some(Series::from_iter(C12U0).cast(&BOUND_DATA_TYPE)?),
             Some(Series::from_iter(C14U0).cast(&BOUND_DATA_TYPE)?),
+            Some(Series::from_iter(C15U0).cast(&BOUND_DATA_TYPE)?),
+            Some(Series::from_iter([Option::<&str>::None, None, None, None, None, None, None, None, None, None, None, None, None, None, None]).cast(&BOUND_DATA_TYPE)?),
             Some(Series::from_iter(C16U0).cast(&BOUND_DATA_TYPE)?),
             Some(Series::from_iter(C16U1DC9).cast(&BOUND_DATA_TYPE)?),
-            Some(Series::from_iter(C18U0).cast(&BOUND_DATA_TYPE)?),
-            Some(Series::from_iter(C18U1DC9).cast(&BOUND_DATA_TYPE)?),
-            Some(Series::from_iter(C18U2DC9DC12).cast(&BOUND_DATA_TYPE)?),
-            Some(Series::from_iter(C20U4DC5DC8DC11DC14).cast(&BOUND_DATA_TYPE)?),
-            Some(Series::from_iter(C20U5DC5DC8DC11DC14DC17).cast(&BOUND_DATA_TYPE)?),
+            // Some(Series::from_iter(C16U1).cast(&BOUND_DATA_TYPE)?),
+            // Some(Series::from_iter(C17U0).cast(&BOUND_DATA_TYPE)?),
+            // Some(Series::from_iter(C17U1).cast(&BOUND_DATA_TYPE)?),
+            // Some(Series::from_iter(C18U0).cast(&BOUND_DATA_TYPE)?),
+            // Some(Series::from_iter(C18U1).cast(&BOUND_DATA_TYPE)?),
+            // Some(Series::from_iter(C18U1).cast(&BOUND_DATA_TYPE)?),
+            // Some(Series::from_iter(C18U1).cast(&BOUND_DATA_TYPE)?),
+            // Some(Series::from_iter(C18U1).cast(&BOUND_DATA_TYPE)?),
+            // Some(Series::from_iter(C20U0).cast(&BOUND_DATA_TYPE)?),
+            // Some(Series::from_iter(C20U1).cast(&BOUND_DATA_TYPE)?),
+            // Some(Series::from_iter(C20U1).cast(&BOUND_DATA_TYPE)?),
+            // Some(Series::from_iter(C20U1).cast(&BOUND_DATA_TYPE)?),
+            // Some(Series::from_iter(C20U1).cast(&BOUND_DATA_TYPE)?),
+            // Some(Series::from_iter(C20U1).cast(&BOUND_DATA_TYPE)?),
+            // Some(Series::from_iter(C22U1).cast(&BOUND_DATA_TYPE)?),
+            // Some(Series::from_iter(C22U1).cast(&BOUND_DATA_TYPE)?),
+            // Some(Series::from_iter(C23U0).cast(&BOUND_DATA_TYPE)?),
+            // Some(Series::from_iter(C22U1).cast(&BOUND_DATA_TYPE)?),
+            // Some(Series::from_iter(C22U1).cast(&BOUND_DATA_TYPE)?),
+            // Some(Series::from_iter(C22U1).cast(&BOUND_DATA_TYPE)?),
+            // Some(Series::from_iter(C24U1).cast(&BOUND_DATA_TYPE)?),
+            // Some(Series::from_iter(C22U1).cast(&BOUND_DATA_TYPE)?),
+            // Some(Series::from_iter(C24U0).cast(&BOUND_DATA_TYPE)?),
         ],
     }?;
 
