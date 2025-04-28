@@ -35,11 +35,11 @@ pub const BOUND_DATA_TYPE: LazyLock<polars::prelude::DataType> = LazyLock::new(|
     create_enum_dtype(categories)
 });
 
-// https://github.com/pola-rs/polars/pull/21806
-
-// https://github.com/pola-rs/polars/issues/22323
+// [Allow to read and write custom file-level parquet metadata](https://github.com/pola-rs/polars/pull/21806)
+//
+// [Incompatible with nanoarrow (incorrect Arrow format)](https://github.com/pola-rs/polars/issues/22323)
 // https://github.com/apache/arrow-nanoarrow/issues/743
-// https://github.com/apache/arrow-rs/issues/7058
+// https://github.com/a pache/arrow-rs/issues/7058
 
 fn main() -> Result<()> {
     // unsafe { std::env::set_var("POLARS_FMT_MAX_COLS", "256") };
