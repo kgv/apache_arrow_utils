@@ -2,19 +2,17 @@
 
 use anyhow::Result;
 use lipid::prelude::*;
-use polars::prelude::{
-    CompatLevel, DataFrame, ParquetWriter, SchemaExt, Series, create_enum_dtype, df,
-};
+use polars::prelude::*;
 use polars_arrow::array::Utf8ViewArray;
 use std::{
     borrow::BorrowMut,
     collections::BTreeMap,
     ffi::OsStr,
     fs::File,
+    num::NonZeroI8,
     path::{Path, PathBuf},
     sync::{Arc, LazyLock},
 };
-// use parquet::arrow::{DataType, Field, Schema};
 
 // file_named:\g\git\kgv\apache_arrow_ipc\output.hmf.parquet
 // created_byPolars
@@ -26,22 +24,118 @@ use std::{
 
 pub type Metadata = BTreeMap<String, String>;
 
-/// Array of bond identifiers.
-pub const IDENTIFIERS: [&str; 10] = [S, D, DC, DT, T, TC, TT, U, UC, UT];
-
-/// The bond data type.
-pub const BOUND_DATA_TYPE: LazyLock<polars::prelude::DataType> = LazyLock::new(|| {
-    let categories = Utf8ViewArray::from_slice_values(IDENTIFIERS);
-    create_enum_dtype(categories)
-});
-
 // [Allow to read and write custom file-level parquet metadata](https://github.com/pola-rs/polars/pull/21806)
 //
 // [Incompatible with nanoarrow (incorrect Arrow format)](https://github.com/pola-rs/polars/issues/22323)
 // https://github.com/apache/arrow-nanoarrow/issues/743
-// https://github.com/a pache/arrow-rs/issues/7058
+// https://github.com/apache/arrow-rs/issues/7058
+
+const C15U1: [(Option<Option<NonZeroI8>>, &str); 14] = [
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), U),
+];
+
+const C16U2: [(Option<Option<NonZeroI8>>, &str); 15] = [
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), U),
+    (Some(None), U),
+];
+
+const C17U1: [(Option<Option<NonZeroI8>>, &str); 16] = [
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), U),
+];
+
+const C24U1: [(Option<Option<NonZeroI8>>, &str); 23] = [
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), S),
+    (Some(None), U),
+];
+
+const C22DC4DC7DC10DC13DC16: [&str; 21] = [
+    S, S, S, DC, S, S, DC, S, S, DC, S, S, DC, S, S, DC, S, S, S, S, S,
+];
 
 fn main() -> Result<()> {
+    // unsafe { std::env::set_var("POLARS_FMT_MAX_COLS", "256") };
+    unsafe { std::env::set_var("POLARS_FMT_MAX_ROWS", "256") };
+    unsafe { std::env::set_var("POLARS_FMT_TABLE_CELL_LIST_LEN", "256") };
+    unsafe { std::env::set_var("POLARS_FMT_STR_LEN", "256") };
+
+    json_to_ipc("MatureMilk.json")?;
+    Ok(())
+}
+
+fn json_to_ipc(input: impl AsRef<Path>) -> Result<PathBuf> {
+    const EXTENSION: &str = "hmfa.arrow";
+
+    let input = input.as_ref();
+    let mut data = LazyJsonLineReader::new(input).finish()?.collect()?;
+    let output = PathBuf::from(input.file_prefix().unwrap_or(OsStr::new("output")))
+        .with_extension(EXTENSION);
+    ipc::polars::write(&output, Default::default(), &mut data)?;
+    Ok(output)
+}
+
+fn _main() -> Result<()> {
     // unsafe { std::env::set_var("POLARS_FMT_MAX_COLS", "256") };
     unsafe { std::env::set_var("POLARS_FMT_MAX_ROWS", "256") };
     unsafe { std::env::set_var("POLARS_FMT_TABLE_CELL_LIST_LEN", "256") };
@@ -63,7 +157,7 @@ fn main() -> Result<()> {
     path.push(file);
     println!("path: {}", path.display());
 
-    let (mut meta, data) = ipc::polars::read(path)?;
+    let (mut meta, data) = ipc::polars::read(&path)?;
     println!("data: {:?}", data.schema());
     println!("data: {data}");
 
@@ -71,58 +165,62 @@ fn main() -> Result<()> {
     // parquet::metadata(output, custom_metadata)?;
     // parquet::read(&output)?;
 
-    // let output = ipc_to_ipc(path)?;
-    // println!("to_ipc: {output:?}");
-    // ipc::polars::read(&output)?;
+    let output = ipc_to_ipc(path)?;
+    println!("to_ipc: {output:?}");
+    let (mut meta, mut data) = ipc::polars::read(&output)?;
+    let mut tempfile = std::fs::File::create("tempfile.json").unwrap();
+    JsonWriter::new(&mut tempfile)
+        .with_json_format(JsonFormat::JsonLines)
+        .finish(&mut data)
+        .unwrap();
+    let data_frame = data
+        .lazy()
+        .select([
+            col("FattyAcid").fatty_acid().display(),
+            col("StereospecificNumber123"),
+            col("StereospecificNumber2"),
+        ])
+        .collect()?;
+    // println!("data_frame???: {data_frame}");
     // ipc::arrow::read(&output)?;
-
     Ok(())
 }
 
 fn ipc_to_ipc(input: impl AsRef<Path>) -> Result<PathBuf> {
     const EXTENSION: &str = "hmfa.arrow";
 
-    // let fatty_acid = df! {
-    //     "FattyAcid" => [
-    //         Some(Series::from_iter(C16U0).cast(&BOUND_DATA_TYPE)?),
-    //         Some(Series::from_iter(C18U1DC9).cast(&BOUND_DATA_TYPE)?),
-    //         Some(Series::from_iter(C18U2DC9DC12).cast(&BOUND_DATA_TYPE)?),
-    //         Some(Series::from_iter(C18U3DC9DC12DC15).cast(&BOUND_DATA_TYPE)?),
-    //     ],
-    // }?;
-
     let fatty_acid = df! {
         "FattyAcid" => [
-            Some(Series::from_iter(C10U0).cast(&BOUND_DATA_TYPE)?),
-            Some(Series::from_iter(C12U0).cast(&BOUND_DATA_TYPE)?),
-            Some(Series::from_iter(C14U0).cast(&BOUND_DATA_TYPE)?),
-            Some(Series::from_iter(C15U0).cast(&BOUND_DATA_TYPE)?),
-            Some(Series::from_iter([Option::<&str>::None, None, None, None, None, None, None, None, None, None, None, None, None, None, None]).cast(&BOUND_DATA_TYPE)?),
-            Some(Series::from_iter(C16U0).cast(&BOUND_DATA_TYPE)?),
-            Some(Series::from_iter(C16U1DC9).cast(&BOUND_DATA_TYPE)?),
-            // Some(Series::from_iter(C16U1).cast(&BOUND_DATA_TYPE)?),
-            // Some(Series::from_iter(C17U0).cast(&BOUND_DATA_TYPE)?),
-            // Some(Series::from_iter(C17U1).cast(&BOUND_DATA_TYPE)?),
-            // Some(Series::from_iter(C18U0).cast(&BOUND_DATA_TYPE)?),
-            // Some(Series::from_iter(C18U1).cast(&BOUND_DATA_TYPE)?),
-            // Some(Series::from_iter(C18U1).cast(&BOUND_DATA_TYPE)?),
-            // Some(Series::from_iter(C18U1).cast(&BOUND_DATA_TYPE)?),
-            // Some(Series::from_iter(C18U1).cast(&BOUND_DATA_TYPE)?),
-            // Some(Series::from_iter(C20U0).cast(&BOUND_DATA_TYPE)?),
-            // Some(Series::from_iter(C20U1).cast(&BOUND_DATA_TYPE)?),
-            // Some(Series::from_iter(C20U1).cast(&BOUND_DATA_TYPE)?),
-            // Some(Series::from_iter(C20U1).cast(&BOUND_DATA_TYPE)?),
-            // Some(Series::from_iter(C20U1).cast(&BOUND_DATA_TYPE)?),
-            // Some(Series::from_iter(C20U1).cast(&BOUND_DATA_TYPE)?),
-            // Some(Series::from_iter(C22U1).cast(&BOUND_DATA_TYPE)?),
-            // Some(Series::from_iter(C22U1).cast(&BOUND_DATA_TYPE)?),
-            // Some(Series::from_iter(C23U0).cast(&BOUND_DATA_TYPE)?),
-            // Some(Series::from_iter(C22U1).cast(&BOUND_DATA_TYPE)?),
-            // Some(Series::from_iter(C22U1).cast(&BOUND_DATA_TYPE)?),
-            // Some(Series::from_iter(C22U1).cast(&BOUND_DATA_TYPE)?),
-            // Some(Series::from_iter(C24U1).cast(&BOUND_DATA_TYPE)?),
-            // Some(Series::from_iter(C22U1).cast(&BOUND_DATA_TYPE)?),
-            // Some(Series::from_iter(C24U0).cast(&BOUND_DATA_TYPE)?),
+            Some(FattyAcidChunked::try_from(C10)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C12)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C14)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C15)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C15U1)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C16)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C16DC9)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C16U2)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C17)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C17U1)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C18)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C18DC9)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C18DC9DC12)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C18DC6DC9DC12)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C18DC9DC12DC15)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C20)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C20DC11)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C20DC11DC14)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C20DC8DC11DC14)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C20DC11DC14DC17)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C20DC5DC8DC11DC14DC17)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C22DC13)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C22DC13DC16)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C23)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C22DC7DC10DC13DC16)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C22DC7DC10DC13DC16DC19)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C22DC4DC7DC10DC13DC16)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C22DC4DC7DC10DC13DC16DC19)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C24)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C24U1)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
         ],
     }?;
 
@@ -154,12 +252,13 @@ fn ipc_to_parquet(input: &Path) -> Result<PathBuf> {
 
     let fatty_acid = df! {
         "FattyAcid" => [
-            Some(Series::from_iter(C16U0).cast(&BOUND_DATA_TYPE)?),
-            Some(Series::from_iter(C18U1DC9).cast(&BOUND_DATA_TYPE)?),
-            Some(Series::from_iter(C18U2DC9DC12).cast(&BOUND_DATA_TYPE)?),
-            Some(Series::from_iter(C18U3DC9DC12DC15).cast(&BOUND_DATA_TYPE)?),
+            Some(FattyAcidChunked::try_from(C16)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C18DC9)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C18DC9DC12)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+            Some(FattyAcidChunked::try_from(C18DC9DC12DC15)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
         ],
     }?;
+
     assert!(matches!(input.extension(), Some(extension) if extension == "ipc"));
     let (mut meta, data) = ipc::polars::read(input)?;
     println!("metadata: {meta:#?}");
@@ -179,7 +278,7 @@ fn ipc_to_parquet(input: &Path) -> Result<PathBuf> {
 // fn ipc_to_parquet() -> Result<()> {
 //     let names = df! {
 //         "FattyAcid" => [
-//             Some(Series::from_iter(C4U0).cast(&BOUND_DATA_TYPE)?),
+//             Some(FattyAcidChunked::try_from(C4)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
 //         ],
 //     }?;
 //     let path = Path::new("presets/ippras/C70_Control.hmf.ipc");
@@ -239,4 +338,5 @@ fn ipc_to_parquet(input: &Path) -> Result<PathBuf> {
 // }
 
 mod ipc;
+mod json;
 mod parquet;

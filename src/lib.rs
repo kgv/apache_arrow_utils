@@ -54,7 +54,7 @@ fn write_ipc_via_polars() -> Result<()> {
 fn read_ipc_via_arrow() -> Result<()> {
     use arrow::ipc::reader::FileReader;
 
-    let file = File::open("temp.arrow")?;
+    let file = File::open("MatureMilkFat.hmfa.arrow")?;
     let reader = FileReader::try_new(file, None)?;
     let schema = reader.schema();
     println!("schema: {schema:#?}");
