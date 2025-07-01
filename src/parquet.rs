@@ -27,6 +27,62 @@ use polars::prelude::{DataFrame, ParquetReader, ParquetWriter, SerReader};
 use polars_arrow::array::ViewType;
 use std::{fs::File, io::stdout, path::Path, sync::Arc};
 
+// version: 1
+// created by: Polars
+
+pub(super) fn set_version(path: impl AsRef<Path>) -> Result<()> {
+    let file = File::open(path)?;
+    let reader = ParquetMetaDataReader::new().parse_and_finish(&file)?;
+    let metadata = reader.file_metadata();
+    let file_metadata = FileMetaData::new(
+        2,
+        metadata.num_rows(),
+        Some("IPPRAS".to_string()),
+        metadata.key_value_metadata().cloned(),
+        metadata.schema_descr_ptr(),
+        metadata.column_orders().cloned(),
+    );
+    Ok(ParquetMetaDataWriter::new(file, &metadata).finish()?)
+    // Ok(ParquetMetaDataReader::new()
+    //     // .with_page_indexes(true)
+    //     // .with_column_indexes(true)
+    //     // .with_offset_indexes(true)
+    //     .parse_and_finish(&file)?
+    //     .file_metadata())
+}
+
+pub(super) fn read(path: impl AsRef<Path>) -> Result<()> {
+    let input = path.as_ref();
+    let output = "OUTPUT.parquet";
+    let reader = SerializedFileReader::new(File::open(input)?)?;
+    let metadata = reader.metadata();
+    print_parquet_metadata(&mut stdout(), metadata);
+    let key_value_metadata = metadata
+        .file_metadata()
+        .key_value_metadata()
+        .map(ToOwned::to_owned);
+    //
+    let reader = ParquetRecordBatchReaderBuilder::try_new(File::open(input)?)?.build()?;
+    let writer_properties = WriterProperties::builder()
+        .set_key_value_metadata(key_value_metadata)
+        .build();
+    let mut writer = ArrowWriter::try_new(
+        File::open(output)?,
+        reader.schema(),
+        Some(writer_properties),
+    )?;
+    for maybe_batch in reader {
+        let batch = maybe_batch.expect("reading batch");
+        writer.write(&batch).expect("writing data");
+    }
+    // for row in iter {
+    //     println!("{}", row?);
+    //     writer.write(&batch).expect("writing data");
+    // }
+    writer.close()?;
+    Ok(())
+}
+
 // https://github.com/apache/arrow-rs/blob/main/parquet/examples/external_metadata.rs
 pub(super) fn metadata(path: impl AsRef<Path>, custom_metadata: Metadata) -> Result<()> {
     print_metadata(&path)?;

@@ -120,20 +120,119 @@ fn main() -> Result<()> {
     unsafe { std::env::set_var("POLARS_FMT_TABLE_CELL_LIST_LEN", "256") };
     unsafe { std::env::set_var("POLARS_FMT_STR_LEN", "256") };
 
-    json_to_ipc("MatureMilk.json")?;
+    let input = "file.parquet";
+    parquet::print_metadata(&input)?;
+    // parquet::metadata(output, custom_metadata)?;
+    parquet::read(input)?;
+
+    // parquet::read_polars(&input)?;
+    // parquet::read_polars(&output)?;
+    // parquet::write_polars(&output, meta, &mut data)?;
+
+    // let fatty_acids = df! {
+    //     "FattyAcid" => [
+    //         Some(FattyAcidChunked::try_from(C16)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+    //         Some(FattyAcidChunked::try_from(C18DC9)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+    //         Some(FattyAcidChunked::try_from(C18DC9DC12)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+    //         Some(FattyAcidChunked::try_from(C18DC6DC9DC12DC15)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+    //     ]
+    // }?;
+    // let (meta, mut data) = ipc::polars::read(&path)?;
+    // println!("data: {data}");
+    // data = fatty_acids.hstack(&data.get_columns()[1..])?;
+    // println!("data_frame: {data}");
+    // data.align_chunks(); // !!!
+    // let output =
+    //     PathBuf::from(path.file_prefix().unwrap_or(OsStr::new("output"))).with_extension(EXTENSION);
+    // ipc::polars::write(&output, meta, &mut data)?;
+
     Ok(())
 }
 
-fn json_to_ipc(input: impl AsRef<Path>) -> Result<PathBuf> {
-    const EXTENSION: &str = "hmfa.arrow";
+fn __main() -> Result<()> {
+    // unsafe { std::env::set_var("POLARS_FMT_MAX_COLS", "256") };
+    unsafe { std::env::set_var("POLARS_FMT_MAX_ROWS", "256") };
+    unsafe { std::env::set_var("POLARS_FMT_TABLE_CELL_LIST_LEN", "256") };
+    unsafe { std::env::set_var("POLARS_FMT_STR_LEN", "256") };
 
-    let input = input.as_ref();
-    let mut data = LazyJsonLineReader::new(input).finish()?.collect()?;
-    let output = PathBuf::from(input.file_prefix().unwrap_or(OsStr::new("output")))
-        .with_extension(EXTENSION);
-    ipc::polars::write(&output, Default::default(), &mut data)?;
-    Ok(output)
+    // let folder = "D:/git/ippras/hmfa/src/presets/ippras/";
+    // let folder = "D:/g/git/ippras/hmfa/src/presets/ippras/";
+    // let file = "C70_Control.hmf.ipc";
+    // let file = "C70_H2O2.hmf.ipc";
+    // let file = "C70_NaCl.hmf.ipc";
+    // let file = "H242_-N.0.0.1.hmf.ipc";
+    // let file = "H242_-N.0.0.2.hmf.ipc";
+    // let file = "H242_-N.0.0.3.hmf.ipc";
+    // let file = "H242_-N.hmf.ipc";
+    let folder = "D:/g/git/ippras/_hmfa/src/presets/10.1021/jf903048p/";
+    let file = "MatureMilkFat.ipc";
+
+    let mut path = PathBuf::from(folder);
+    path.push(file);
+    println!("path: {}", path.display());
+
+    let (mut meta, data) = ipc::polars::read(&path)?;
+    println!("data: {:?}", data.schema());
+    println!("data: {data}");
+
+    // let output = to_parquet(&path)?;
+    // parquet::metadata(output, custom_metadata)?;
+    // parquet::read(&output)?;
+
+    let output = ipc_to_ipc(path)?;
+    println!("to_ipc: {output:?}");
+    let (mut meta, mut data) = ipc::polars::read(&output)?;
+
+    // let data_frame = data
+    //     .lazy()
+    //     .select([
+    //         col("FattyAcid").fatty_acid().display(),
+    //         col("StereospecificNumber123"),
+    //         col("StereospecificNumber2"),
+    //     ])
+    //     .collect()?;
+    // println!("data_frame???: {data_frame}");
+    // ipc::arrow::read(&output)?;
+    Ok(())
 }
+
+// fn main() -> Result<()> {
+//     // unsafe { std::env::set_var("POLARS_FMT_MAX_COLS", "256") };
+//     unsafe { std::env::set_var("POLARS_FMT_MAX_ROWS", "256") };
+//     unsafe { std::env::set_var("POLARS_FMT_TABLE_CELL_LIST_LEN", "256") };
+//     unsafe { std::env::set_var("POLARS_FMT_STR_LEN", "256") };
+//     let (meta, data) = ipc::polars::read("Lunaria rediviva.2024-01-24.1.1.0.utca.ipc")?;
+//     println!("data: {data}");
+//     let experimental = [
+//         0.088, 0.2, 0.0275, 0.0275, 0.0215, 0.0215, 0.09, 0.09, 0.013, 0.0515, 0.0515, 0.018, 0.0,
+//         0.0, 0.0, 0.097, 0.0085, 0.0085, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.015, 0.015,
+//     ];
+//     let data_frame = data
+//         .lazy()
+//         .with_column(lit(Series::new("Experimental".into(), experimental)))
+//         .group_by([col("Label").struct_().field_by_index(1)])
+//         .agg([col("Experimental").sum(), col("Value").sum(), col("Label")])
+//         .collect()?;
+//     println!("data_frame: {data_frame}");
+//     // ipc::arrow::read("Lunaria rediviva.2024-01-24.1.1.0.utca.ipc")?;
+//     // json_to_ipc("MatureMilk.json")?;
+//     Ok(())
+// }
+
+// {123} {UUU} {U_3} {S_2U}
+// {13=2} {UU=U} {S2=U} {S_2=U} {SU=U}
+// {1-2-3} {U-U-U} {U-U-U}
+
+// fn json_to_ipc(input: impl AsRef<Path>) -> Result<PathBuf> {
+//     const EXTENSION: &str = "hmfa.arrow";
+
+//     let input = input.as_ref();
+//     let mut data = LazyJsonLineReader::new(input).finish()?.collect()?;
+//     let output = PathBuf::from(input.file_prefix().unwrap_or(OsStr::new("output")))
+//         .with_extension(EXTENSION);
+//     ipc::polars::write(&output, Default::default(), &mut data)?;
+//     Ok(output)
+// }
 
 fn _main() -> Result<()> {
     // unsafe { std::env::set_var("POLARS_FMT_MAX_COLS", "256") };
