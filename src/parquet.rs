@@ -30,30 +30,63 @@ use std::{fs::File, io::stdout, path::Path, sync::Arc};
 // version: 1
 // created by: Polars
 
-pub(super) fn set_version(path: impl AsRef<Path>) -> Result<()> {
-    let file = File::open(path)?;
-    let reader = ParquetMetaDataReader::new().parse_and_finish(&file)?;
-    let metadata = reader.file_metadata();
-    let file_metadata = FileMetaData::new(
-        2,
-        metadata.num_rows(),
-        Some("IPPRAS".to_string()),
-        metadata.key_value_metadata().cloned(),
-        metadata.schema_descr_ptr(),
-        metadata.column_orders().cloned(),
-    );
-    Ok(ParquetMetaDataWriter::new(file, &metadata).finish()?)
-    // Ok(ParquetMetaDataReader::new()
-    //     // .with_page_indexes(true)
-    //     // .with_column_indexes(true)
-    //     // .with_offset_indexes(true)
-    //     .parse_and_finish(&file)?
-    //     .file_metadata())
+// pub(super) fn set_created_by(path: impl AsRef<Path>) -> Result<()> {
+//     let file = File::open(path)?;
+//     let reader = SerializedFileReader::new(file)?;
+//     let metadata = reader.metadata();
+//     // let mut file_metadata = metadata.file_metadata().clone();
+//     let mut file_metadata = metadata.file_metadata().clone();
+//     // file_metadata.set_created_by(Some("IPPRAS".to_string()));
+//     let output = File::create("output.parquet")?;
+//     let schema = Arc::new(file_metadata.schema_descr().root_schema().clone());
+//     let mut writer = SerializedFileWriter::new(output, schema, Arc::new(file_metadata))?;
+//     // for index in 0..reader.num_row_groups() {
+//     //     let row_group_reader = reader.get_row_group(index)?;
+//     //     writer.append_row_group(row_group_reader)?;
+//     // }
+//     writer.close()?;
+//     Ok(())
+// }
+
+/// `<application> version <application version> (build <application build hash>)`
+/// `parquet-mr version 1.8.0 (build 0fda28af84b9746396014ad6a415b90592a98b3b)`
+pub(super) fn set_created_by(path: impl AsRef<Path>, created_by: impl AsRef<str>) -> Result<()> {
+    let input = path.as_ref();
+    let output = "OUTPUT.parquet";
+    // Metadata
+    let reader = SerializedFileReader::new(File::open(input)?)?;
+    let metadata = reader.metadata();
+    // print_parquet_metadata(&mut stdout(), metadata);
+    // Dataframe
+    let reader = ParquetRecordBatchReaderBuilder::try_new(File::open(input)?)?.build()?;
+    let writer_properties = WriterProperties::builder()
+        .set_created_by("IPPRAS".to_owned())
+        .set_key_value_metadata(
+            metadata
+                .file_metadata()
+                .key_value_metadata()
+                .map(ToOwned::to_owned),
+        )
+        .build();
+    let mut writer = ArrowWriter::try_new(
+        File::create(output)?,
+        reader.schema(),
+        Some(writer_properties),
+    )?;
+    for maybe_batch in reader {
+        let batch = maybe_batch.expect("reading batch");
+        writer.write(&batch).expect("writing data");
+    }
+    // for row in iter {
+    //     println!("{}", row?);
+    //     writer.write(&batch).expect("writing data");
+    // }
+    writer.close()?;
+    Ok(())
 }
 
 pub(super) fn read(path: impl AsRef<Path>) -> Result<()> {
     let input = path.as_ref();
-    let output = "OUTPUT.parquet";
     let reader = SerializedFileReader::new(File::open(input)?)?;
     let metadata = reader.metadata();
     print_parquet_metadata(&mut stdout(), metadata);
@@ -61,13 +94,15 @@ pub(super) fn read(path: impl AsRef<Path>) -> Result<()> {
         .file_metadata()
         .key_value_metadata()
         .map(ToOwned::to_owned);
-    //
     let reader = ParquetRecordBatchReaderBuilder::try_new(File::open(input)?)?.build()?;
+
+    let output = "OUTPUT.parquet";
     let writer_properties = WriterProperties::builder()
+        .set_created_by("IPPRAS".to_owned())
         .set_key_value_metadata(key_value_metadata)
         .build();
     let mut writer = ArrowWriter::try_new(
-        File::open(output)?,
+        File::create(output)?,
         reader.schema(),
         Some(writer_properties),
     )?;
@@ -87,7 +122,8 @@ pub(super) fn read(path: impl AsRef<Path>) -> Result<()> {
 pub(super) fn metadata(path: impl AsRef<Path>, custom_metadata: Metadata) -> Result<()> {
     print_metadata(&path)?;
     let mut metadata = read_metadata(&path)?;
-    // metadata = prepare_metadata(metadata, custom_metadata);
+    metadata = prepare_metadata(metadata, custom_metadata);
+    println!("metadata: {metadata:?}");
     write_metadata(metadata, "TEST2.parquet")?;
     print_metadata(&path)?;
     Ok(())

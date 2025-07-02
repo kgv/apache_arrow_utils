@@ -121,9 +121,10 @@ fn main() -> Result<()> {
     unsafe { std::env::set_var("POLARS_FMT_STR_LEN", "256") };
 
     let input = "file.parquet";
-    parquet::print_metadata(&input)?;
-    // parquet::metadata(output, custom_metadata)?;
+    // parquet::print_metadata(input)?;
     parquet::read(input)?;
+    // parquet::metadata(output, custom_metadata)?;
+    // parquet::read(input)?;
 
     // parquet::read_polars(&input)?;
     // parquet::read_polars(&output)?;
