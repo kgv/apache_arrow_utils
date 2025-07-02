@@ -1,7 +1,9 @@
 #![feature(path_file_prefix)]
 
+use ::parquet::format::KeyValue;
 use anyhow::Result;
 use lipid::prelude::*;
+use metadata::{AUTHORS, NAME, VERSION};
 use polars::prelude::*;
 use polars_arrow::array::Utf8ViewArray;
 use std::{
@@ -120,33 +122,28 @@ fn main() -> Result<()> {
     unsafe { std::env::set_var("POLARS_FMT_TABLE_CELL_LIST_LEN", "256") };
     unsafe { std::env::set_var("POLARS_FMT_STR_LEN", "256") };
 
-    let input = "file.parquet";
-    // parquet::print_metadata(input)?;
-    parquet::read(input)?;
-    // parquet::metadata(output, custom_metadata)?;
-    // parquet::read(input)?;
-
-    // parquet::read_polars(&input)?;
-    // parquet::read_polars(&output)?;
-    // parquet::write_polars(&output, meta, &mut data)?;
-
-    // let fatty_acids = df! {
-    //     "FattyAcid" => [
-    //         Some(FattyAcidChunked::try_from(C16)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-    //         Some(FattyAcidChunked::try_from(C18DC9)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-    //         Some(FattyAcidChunked::try_from(C18DC9DC12)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-    //         Some(FattyAcidChunked::try_from(C18DC6DC9DC12DC15)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-    //     ]
-    // }?;
-    // let (meta, mut data) = ipc::polars::read(&path)?;
-    // println!("data: {data}");
-    // data = fatty_acids.hstack(&data.get_columns()[1..])?;
-    // println!("data_frame: {data}");
-    // data.align_chunks(); // !!!
-    // let output =
-    //     PathBuf::from(path.file_prefix().unwrap_or(OsStr::new("output"))).with_extension(EXTENSION);
-    // ipc::polars::write(&output, meta, &mut data)?;
-
+    let input = "INPUT.parquet";
+    let output = "OUTPUT.parquet";
+    parquet::set_metadata(
+        input,
+        "IPPRAS",
+        vec![
+            KeyValue {
+                key: AUTHORS.to_owned(),
+                value: Some("Giorgi Vladimirovich Kazakov;Roman Alexandrovich Sidorov".to_owned()),
+            },
+            KeyValue {
+                key: NAME.to_owned(),
+                value: Some("Some name".to_owned()),
+            },
+            KeyValue {
+                key: VERSION.to_owned(),
+                value: Some("0.0.1".to_owned()),
+            },
+        ],
+    )?;
+    // parquet::print_metadata(output)?;
+    parquet::read_polars(output)?;
     Ok(())
 }
 
