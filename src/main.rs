@@ -2,6 +2,7 @@
 
 use ::parquet::format::KeyValue;
 use anyhow::Result;
+use fatty_acid_macro::fatty_acid;
 use lipid::prelude::*;
 use metadata::{AUTHORS, NAME, VERSION};
 use polars::prelude::*;
@@ -32,90 +33,6 @@ pub type Metadata = BTreeMap<String, String>;
 // https://github.com/apache/arrow-nanoarrow/issues/743
 // https://github.com/apache/arrow-rs/issues/7058
 
-const C15U1: [(Option<Option<NonZeroI8>>, &str); 14] = [
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), U),
-];
-
-const C16U2: [(Option<Option<NonZeroI8>>, &str); 15] = [
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), U),
-    (Some(None), U),
-];
-
-const C17U1: [(Option<Option<NonZeroI8>>, &str); 16] = [
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), U),
-];
-
-const C24U1: [(Option<Option<NonZeroI8>>, &str); 23] = [
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), S),
-    (Some(None), U),
-];
-
-const C22DC4DC7DC10DC13DC16: [&str; 21] = [
-    S, S, S, DC, S, S, DC, S, S, DC, S, S, DC, S, S, DC, S, S, S, S, S,
-];
-
 fn main() -> Result<()> {
     // unsafe { std::env::set_var("POLARS_FMT_MAX_COLS", "256") };
     unsafe { std::env::set_var("POLARS_FMT_MAX_ROWS", "256") };
@@ -145,6 +62,63 @@ fn main() -> Result<()> {
     // parquet::print_metadata(output)?;
     parquet::read_polars(output)?;
     Ok(())
+}
+
+const TAG: &str = "TAG";
+
+fn write_parquet(input: &Path) -> Result<PathBuf> {
+    const EXTENSION: &str = "hmfa.parquet";
+
+    // #2738
+    let fatty_acid = df! {
+        FATTY_ACID => Series::from_any_values_and_dtype(FATTY_ACID.into(), &[
+            fatty_acid!(C16 { })?,
+            fatty_acid!(C18 { })?,
+            fatty_acid!(C18 { 9 => DC })?,
+            fatty_acid!(C18 { 11 => DC })?,
+            fatty_acid!(C18 { 9 => DC, 12 => DC })?,
+            fatty_acid!(C18 { 6 => DC, 9 => DC, 12 => DC })?,
+            fatty_acid!(C20 { })?,
+            fatty_acid!(C18 { 9 => DC, 12 => DC, 15 => DC })?,
+            fatty_acid!(C20 { 11 => DC })?,
+            fatty_acid!(C20 { 11 => DC, 14 => DC })?,
+            fatty_acid!(C22 { })?,
+            fatty_acid!(C22 { 13 => DC })?,
+            fatty_acid!(C24 { })?,
+            fatty_acid!(C24 { 15 => DC })?,
+        ], &data_type!(FATTY_ACID), true)?,
+        TAG => [
+            7979670.454,
+            2295238.017,
+            39083890.184,
+            3483557.731,
+            90724727.520,
+            10218630.561,
+            150650.284,
+            1929464.237,
+            8531661.618,
+            219058.834,
+            523039.524,
+            27084176.029,
+            249251.243,
+            9670803.016,
+        ],
+    }?;
+
+    assert!(matches!(input.extension(), Some(extension) if extension == "ipc"));
+    let (mut meta, data) = ipc::polars::read(input)?;
+    println!("metadata: {meta:#?}");
+    meta.retain(|_key, value| !value.is_empty());
+    println!("metadata: {meta:#?}");
+    println!("data_frame: {data}");
+    let mut data = fatty_acid.hstack(&data.get_columns()[1..])?;
+    println!("data_frame: {data}");
+    data.align_chunks(); // !!!
+    let output = PathBuf::from(input.file_prefix().unwrap_or(OsStr::new("output")))
+        .with_extension(EXTENSION);
+    parquet::write_polars(&output, meta, &mut data)?;
+    parquet::read_polars(&output)?;
+    Ok(output)
 }
 
 fn __main() -> Result<()> {
@@ -273,7 +247,7 @@ fn _main() -> Result<()> {
     let data_frame = data
         .lazy()
         .select([
-            col("FattyAcid").fatty_acid().display(),
+            col("FattyAcid").fatty_acid().format(),
             col("StereospecificNumber123"),
             col("StereospecificNumber2"),
         ])
@@ -287,38 +261,38 @@ fn ipc_to_ipc(input: impl AsRef<Path>) -> Result<PathBuf> {
     const EXTENSION: &str = "hmfa.arrow";
 
     let fatty_acid = df! {
-        "FattyAcid" => [
-            Some(FattyAcidChunked::try_from(C10)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C12)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C14)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C15)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C15U1)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C16)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C16DC9)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C16U2)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C17)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C17U1)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C18)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C18DC9)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C18DC9DC12)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C18DC6DC9DC12)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C18DC9DC12DC15)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C20)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C20DC11)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C20DC11DC14)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C20DC8DC11DC14)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C20DC11DC14DC17)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C20DC5DC8DC11DC14DC17)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C22DC13)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C22DC13DC16)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C23)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C22DC7DC10DC13DC16)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C22DC7DC10DC13DC16DC19)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C22DC4DC7DC10DC13DC16)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C22DC4DC7DC10DC13DC16DC19)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C24)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C24U1)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-        ],
+        FATTY_ACID => Series::from_any_values_and_dtype(FATTY_ACID.into(), &[
+            fatty_acid!(C10 { })?,
+            fatty_acid!(C12 { })?,
+            fatty_acid!(C14 { })?,
+            fatty_acid!(C15 { })?,
+            fatty_acid!(C15 { 1 => U })?,
+            fatty_acid!(C16 { })?,
+            fatty_acid!(C16 { 9 => DC })?,
+            fatty_acid!(C16 { 2 => U })?,
+            fatty_acid!(C17 { })?,
+            fatty_acid!(C17 { 1 => U })?,
+            fatty_acid!(C18 { })?,
+            fatty_acid!(C18 { 9 => DC })?,
+            fatty_acid!(C18 { 9 => DC, 12 => DC })?,
+            fatty_acid!(C18 { 6 => DC, 9 => DC, 12 => DC })?,
+            fatty_acid!(C18 { 9 => DC, 12 => DC, 15 => DC })?,
+            fatty_acid!(C20 { })?,
+            fatty_acid!(C20 { 11 => DC })?,
+            fatty_acid!(C20 { 11 => DC, 14 => DC })?,
+            fatty_acid!(C20 { 8 => DC, 11 => DC, 14 => DC })?,
+            fatty_acid!(C20 { 11 => DC, 14 => DC, 17 => DC })?,
+            fatty_acid!(C20 { 5 => DC, 8 => DC, 11 => DC, 14 => DC, 17 => DC })?,
+            fatty_acid!(C22 { 13 => DC })?,
+            fatty_acid!(C22 { 13 => DC, 16 => DC })?,
+            fatty_acid!(C23 { })?,
+            fatty_acid!(C22 { 7 => DC, 10 => DC, 13 => DC, 16 => DC })?,
+            fatty_acid!(C22 { 7 => DC, 10 => DC, 13 => DC, 16 => DC, 19 => DC })?,
+            fatty_acid!(C22 { 4 => DC, 7 => DC, 10 => DC, 13 => DC, 16 => DC })?,
+            fatty_acid!(C22 { 4 => DC, 7 => DC, 10 => DC, 13 => DC, 16 => DC, 19 => DC })?,
+            fatty_acid!(C24 { })?,
+            fatty_acid!(C24 { 1 => U })?,
+        ], &data_type!(FATTY_ACID), true)?,
     }?;
 
     let input = input.as_ref();
@@ -348,12 +322,37 @@ fn ipc_to_parquet(input: &Path) -> Result<PathBuf> {
     const EXTENSION: &str = "hmfa.parquet";
 
     let fatty_acid = df! {
-        "FattyAcid" => [
-            Some(FattyAcidChunked::try_from(C16)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C18DC9)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C18DC9DC12)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-            Some(FattyAcidChunked::try_from(C18DC9DC12DC15)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
-        ],
+        FATTY_ACID => Series::from_any_values_and_dtype(FATTY_ACID.into(), &[
+            fatty_acid!(C16 { })?,
+            fatty_acid!(C17 { })?,
+            fatty_acid!(C17 { 1 => U })?,
+            fatty_acid!(C18 { })?,
+            fatty_acid!(C18 { 9 => DC })?,
+            fatty_acid!(C18 { 9 => DC, 12 => DC })?,
+            fatty_acid!(C18 { 6 => DC, 9 => DC, 12 => DC })?,
+            fatty_acid!(C18 { 9 => DC, 12 => DC, 15 => DC })?,
+            fatty_acid!(C20 { })?,
+            fatty_acid!(C20 { 11 => DC })?,
+            fatty_acid!(C20 { 11 => DC, 14 => DC })?,
+            fatty_acid!(C20 { 8 => DC, 11 => DC, 14 => DC })?,
+            fatty_acid!(C20 { 11 => DC, 14 => DC, 17 => DC })?,
+            fatty_acid!(C20 { 5 => DC, 8 => DC, 11 => DC, 14 => DC, 17 => DC })?,
+            fatty_acid!(C22 { 13 => DC })?,
+            fatty_acid!(C22 { 13 => DC, 16 => DC })?,
+            fatty_acid!(C23 { })?,
+            fatty_acid!(C22 { 7 => DC, 10 => DC, 13 => DC, 16 => DC })?,
+            fatty_acid!(C22 { 7 => DC, 10 => DC, 13 => DC, 16 => DC, 19 => DC })?,
+            fatty_acid!(C22 { 4 => DC, 7 => DC, 10 => DC, 13 => DC, 16 => DC })?,
+            fatty_acid!(C22 { 4 => DC, 7 => DC, 10 => DC, 13 => DC, 16 => DC, 19 => DC })?,
+            fatty_acid!(C24 { })?,
+            fatty_acid!(C24 { 1 => U })?,
+        ], &data_type!(FATTY_ACID), true)?,
+        // "FattyAcid" => [
+        //     Some(FattyAcidChunked::try_from(C16)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+        //     Some(FattyAcidChunked::try_from(C18DC9)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+        //     Some(FattyAcidChunked::try_from(C18DC9DC12)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+        //     Some(FattyAcidChunked::try_from(C18DC9DC12DC15)?.into_struct(PlSmallStr::EMPTY)?.into_series()),
+        // ],
     }?;
 
     assert!(matches!(input.extension(), Some(extension) if extension == "ipc"));
