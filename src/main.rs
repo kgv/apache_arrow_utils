@@ -65,44 +65,48 @@ fn main() -> Result<()> {
 }
 
 const TAG: &str = "TAG";
+const MAG: &str = "MAG";
 
 fn write_parquet(input: &Path) -> Result<PathBuf> {
     const EXTENSION: &str = "hmfa.parquet";
 
-    // #2738
     let fatty_acid = df! {
         FATTY_ACID => Series::from_any_values_and_dtype(FATTY_ACID.into(), &[
             fatty_acid!(C16 { })?,
             fatty_acid!(C18 { })?,
             fatty_acid!(C18 { 9 => DC })?,
             fatty_acid!(C18 { 11 => DC })?,
+            fatty_acid!(C18 { 6 => DC, 9 => DC })?,
             fatty_acid!(C18 { 9 => DC, 12 => DC })?,
             fatty_acid!(C18 { 6 => DC, 9 => DC, 12 => DC })?,
-            fatty_acid!(C20 { })?,
             fatty_acid!(C18 { 9 => DC, 12 => DC, 15 => DC })?,
             fatty_acid!(C20 { 11 => DC })?,
-            fatty_acid!(C20 { 11 => DC, 14 => DC })?,
-            fatty_acid!(C22 { })?,
-            fatty_acid!(C22 { 13 => DC })?,
-            fatty_acid!(C24 { })?,
-            fatty_acid!(C24 { 15 => DC })?,
+            fatty_acid!(C22 { 11 => DC })?,
         ], &data_type!(FATTY_ACID), true)?,
         TAG => [
-            7979670.454,
-            2295238.017,
-            39083890.184,
-            3483557.731,
-            90724727.520,
-            10218630.561,
-            150650.284,
-            1929464.237,
-            8531661.618,
-            219058.834,
-            523039.524,
-            27084176.029,
-            249251.243,
-            9670803.016,
+            680242.033,
+            385234.962,
+            54305963.077,
+            3713731.497,
+            368461.696,
+            225125516.191,
+            90184535.565,
+            1505580.175,
+            966752.710,
+            322111.335,
         ],
+        MAG => [
+            680242.033,
+            385234.962,
+            54305963.077,
+            3713731.497,
+            368461.696,
+            225125516.191,
+            90184535.565,
+            1505580.175,
+            966752.710,
+            322111.335,
+        ]
     }?;
 
     assert!(matches!(input.extension(), Some(extension) if extension == "ipc"));
