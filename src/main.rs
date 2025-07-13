@@ -58,7 +58,7 @@ fn main() -> Result<()> {
 fn fix_metadata(path: &Path) -> Result<()> {
     let name = "Acer Ukurunduense";
     let version = "0.0.1";
-    let description = "#2743, #2775";
+    let description = "2743, 2775";
     let date = "2025-07-08";
     let output = parquet::set_metadata(
         path,
