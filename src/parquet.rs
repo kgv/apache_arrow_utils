@@ -9,7 +9,6 @@ use arrow::{
     ipc::reader::FileReader,
     util::pretty::print_batches,
 };
-use heck::ToPascalCase as _;
 use metadata::{AUTHORS, DATE, NAME, VERSION};
 use parquet::{
     arrow::{ArrowWriter, arrow_reader::ParquetRecordBatchReaderBuilder},
@@ -49,8 +48,7 @@ pub(super) fn set_metadata(
         .iter()
         .find_map(|key_value| (key_value.key == NAME).then_some(key_value.value.as_deref()))
         .flatten()
-        .unwrap_or_default()
-        .to_pascal_case();
+        .unwrap_or_default();
     let date = key_values
         .iter()
         .find_map(|key_value| (key_value.key == DATE).then_some(key_value.value.as_deref()))
@@ -62,7 +60,6 @@ pub(super) fn set_metadata(
         .flatten()
         .unwrap_or_default();
     let output = PathBuf::from(format!("{name}.{date}.{version}.{EXTENSION}"));
-    // let output = input.with_extension("metadata.parquet");
     // Metadata
     let reader = SerializedFileReader::new(File::open(input)?)?;
     let metadata = reader.metadata();
