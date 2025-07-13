@@ -116,6 +116,7 @@ dependencies = [
  "anyhow",
  "arrow",
  "fatty_acid_macro",
+ "heck 0.5.0",
  "lipid",
  "metadata",
  "parquet",

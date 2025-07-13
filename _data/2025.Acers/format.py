@@ -19,9 +19,9 @@ def transform_fatty_acid_notation(notation_str):
     if positions_part:
         positions = positions_part.split(',')
         formatted_positions = ", ".join(f"{pos} => DC" for pos in positions)
-        return f"fatty_acid!(C{carbon_count} {{ {formatted_positions} }})?,"
+        return f"C{carbon_count} {{ {formatted_positions} }},"
     else:
-        return f"fatty_acid!(C{carbon_count} {{ }})?,"
+        return f"C{carbon_count} {{ }},"
 
 def process_markdown_tables(markdown_text):
     """

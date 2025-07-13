@@ -1,10 +1,11 @@
 #![feature(path_file_prefix)]
+#![feature(path_add_extension)]
 
 use ::parquet::format::KeyValue;
 use anyhow::Result;
 use fatty_acid_macro::fatty_acid;
 use lipid::prelude::*;
-use metadata::{AUTHORS, NAME, VERSION};
+use metadata::{AUTHORS, DATE, DESCRIPTION, NAME, VERSION};
 use polars::prelude::*;
 use polars_arrow::array::Utf8ViewArray;
 use std::{
@@ -25,13 +26,21 @@ use std::{
 // encryption_algorithm0
 // footer_signing_key_metadata0
 
-pub type Metadata = BTreeMap<String, String>;
-
 // [Allow to read and write custom file-level parquet metadata](https://github.com/pola-rs/polars/pull/21806)
 //
 // [Incompatible with nanoarrow (incorrect Arrow format)](https://github.com/pola-rs/polars/issues/22323)
 // https://github.com/apache/arrow-nanoarrow/issues/743
 // https://github.com/apache/arrow-rs/issues/7058
+
+// {123} {UUU} {U_3} {S_2U}
+// {13=2} {UU=U} {S2=U} {S_2=U} {SU=U}
+// {1-2-3} {U-U-U} {U-U-U}
+
+pub type Metadata = BTreeMap<String, String>;
+
+const TAG: &str = "TAG";
+const MAG: &str = "MAG";
+const EXTENSION: &str = "utca.parquet";
 
 fn main() -> Result<()> {
     // unsafe { std::env::set_var("POLARS_FMT_MAX_COLS", "256") };
@@ -39,10 +48,20 @@ fn main() -> Result<()> {
     unsafe { std::env::set_var("POLARS_FMT_TABLE_CELL_LIST_LEN", "256") };
     unsafe { std::env::set_var("POLARS_FMT_STR_LEN", "256") };
 
-    let input = "INPUT.parquet";
-    let output = "OUTPUT.parquet";
-    parquet::set_metadata(
-        input,
+    let path = Path::new("CONFIG").with_extension(EXTENSION);
+
+    write_parquet(&path)?;
+    fix_metadata(&path)?;
+    Ok(())
+}
+
+fn fix_metadata(path: &Path) -> Result<()> {
+    let name = "Acer Ukurunduense";
+    let version = "0.0.1";
+    let description = "#2743, #2775";
+    let date = "2025-07-08";
+    let output = parquet::set_metadata(
+        path,
         "IPPRAS",
         vec![
             KeyValue {
@@ -50,79 +69,93 @@ fn main() -> Result<()> {
                 value: Some("Giorgi Vladimirovich Kazakov;Roman Alexandrovich Sidorov".to_owned()),
             },
             KeyValue {
+                key: DATE.to_owned(),
+                value: Some(date.to_owned()),
+            },
+            KeyValue {
+                key: DESCRIPTION.to_owned(),
+                value: Some(description.to_owned()),
+            },
+            KeyValue {
                 key: NAME.to_owned(),
-                value: Some("Some name".to_owned()),
+                value: Some(name.to_owned()),
             },
             KeyValue {
                 key: VERSION.to_owned(),
-                value: Some("0.0.1".to_owned()),
+                value: Some(version.to_owned()),
             },
         ],
     )?;
-    // parquet::print_metadata(output)?;
-    parquet::read_polars(output)?;
+    parquet::print_metadata(&output)?;
+    parquet::read_polars(&output)?;
     Ok(())
 }
 
-const TAG: &str = "TAG";
-const MAG: &str = "MAG";
-
-fn write_parquet(input: &Path) -> Result<PathBuf> {
-    const EXTENSION: &str = "hmfa.parquet";
-
-    let fatty_acid = df! {
+// assert!(matches!(input.extension(), Some(extension) if extension == "ipc"));
+// let (mut meta, data) = ipc::polars::read(input)?;
+// println!("metadata: {meta:#?}");
+// meta.retain(|_key, value| !value.is_empty());
+// println!("metadata: {meta:#?}");
+// println!("data_frame: {data}");
+// let mut data = fatty_acid.hstack(&data.get_columns()[1..])?;
+// println!("data_frame: {data}");
+// data.align_chunks(); // !!!
+// let output = PathBuf::from(output).with_extension(EXTENSION);
+fn write_parquet(path: &Path) -> Result<()> {
+    let mut data = df! {
         FATTY_ACID => Series::from_any_values_and_dtype(FATTY_ACID.into(), &[
-            fatty_acid!(C16 { })?,
-            fatty_acid!(C18 { })?,
-            fatty_acid!(C18 { 9 => DC })?,
-            fatty_acid!(C18 { 11 => DC })?,
-            fatty_acid!(C18 { 6 => DC, 9 => DC })?,
-            fatty_acid!(C18 { 9 => DC, 12 => DC })?,
-            fatty_acid!(C18 { 6 => DC, 9 => DC, 12 => DC })?,
-            fatty_acid!(C18 { 9 => DC, 12 => DC, 15 => DC })?,
-            fatty_acid!(C20 { 11 => DC })?,
-            fatty_acid!(C22 { 11 => DC })?,
+            fatty_acid!(C16 { }                             )?,
+            fatty_acid!(C18 { }                             )?,
+            fatty_acid!(C18 { 6 => DC, 9 => DC, 12 => DC }  )?,
+            fatty_acid!(C18 { 9 => DC }                     )?,
+            fatty_acid!(C18 { 9 => DC, 12 => DC }           )?,
+            fatty_acid!(C18 { 9 => DC, 12 => DC, 15 => DC } )?,
+            fatty_acid!(C18 { 11 => DC }                    )?,
+            fatty_acid!(C20 { }                             )?,
+            fatty_acid!(C20 { 11 => DC }                    )?,
+            fatty_acid!(C20 { 11 => DC, 14 => DC }          )?,
+            fatty_acid!(C22 { }                             )?,
+            fatty_acid!(C22 { 13 => DC }                    )?,
+            fatty_acid!(C24 { }                             )?,
+            fatty_acid!(C24 { 15 => DC }                    )?,
         ], &data_type!(FATTY_ACID), true)?,
         TAG => [
-            680242.033,
-            385234.962,
-            54305963.077,
-            3713731.497,
-            368461.696,
-            225125516.191,
-            90184535.565,
-            1505580.175,
-            966752.710,
-            322111.335,
+            Some(14047422.446)   ,
+            Some(7023913.743)    ,
+            Some(39670331.322)   ,
+            Some(72617978.065)   ,
+            Some(145640392.633)  ,
+            Some(1128691.236)    ,
+            Some(7226143.341)    ,
+            Some(973002.251)     ,
+            Some(33911367.036)   ,
+            Some(883380.376)     ,
+            Some(1649695.728)    ,
+            Some(68902557.008)   ,
+            Some(569997.620)     ,
+            Some(19272586.931)   ,
         ],
         MAG => [
-            680242.033,
-            385234.962,
-            54305963.077,
-            3713731.497,
-            368461.696,
-            225125516.191,
-            90184535.565,
-            1505580.175,
-            966752.710,
-            322111.335,
+            Some(680242.033)     ,
+            Some(385234.962)     ,
+            Some(90184535.565)   ,
+            Some(54305963.077)   ,
+            Some(225125516.191)  ,
+            Some(1505580.175)    ,
+            Some(3713731.497)    ,
+            None                 ,
+            Some(966752.710)     ,
+            None                 ,
+            None                 ,
+            Some(322111.335)     ,
+            None                 ,
+            None                 ,
         ]
     }?;
-
-    assert!(matches!(input.extension(), Some(extension) if extension == "ipc"));
-    let (mut meta, data) = ipc::polars::read(input)?;
-    println!("metadata: {meta:#?}");
-    meta.retain(|_key, value| !value.is_empty());
-    println!("metadata: {meta:#?}");
-    println!("data_frame: {data}");
-    let mut data = fatty_acid.hstack(&data.get_columns()[1..])?;
-    println!("data_frame: {data}");
-    data.align_chunks(); // !!!
-    let output = PathBuf::from(input.file_prefix().unwrap_or(OsStr::new("output")))
-        .with_extension(EXTENSION);
-    parquet::write_polars(&output, meta, &mut data)?;
-    parquet::read_polars(&output)?;
-    Ok(output)
+    let meta = Default::default();
+    parquet::write_polars(path, meta, &mut data)?;
+    parquet::read_polars(path)?;
+    Ok(())
 }
 
 fn __main() -> Result<()> {
@@ -194,10 +227,6 @@ fn __main() -> Result<()> {
 //     // json_to_ipc("MatureMilk.json")?;
 //     Ok(())
 // }
-
-// {123} {UUU} {U_3} {S_2U}
-// {13=2} {UU=U} {S2=U} {S_2=U} {SU=U}
-// {1-2-3} {U-U-U} {U-U-U}
 
 // fn json_to_ipc(input: impl AsRef<Path>) -> Result<PathBuf> {
 //     const EXTENSION: &str = "hmfa.arrow";

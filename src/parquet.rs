@@ -1,4 +1,4 @@
-use crate::Metadata;
+use crate::{EXTENSION, Metadata};
 use anyhow::Result;
 use arrow::{
     array::{
@@ -9,7 +9,8 @@ use arrow::{
     ipc::reader::FileReader,
     util::pretty::print_batches,
 };
-use metadata::{AUTHORS, NAME, VERSION};
+use heck::ToPascalCase as _;
+use metadata::{AUTHORS, DATE, NAME, VERSION};
 use parquet::{
     arrow::{ArrowWriter, arrow_reader::ParquetRecordBatchReaderBuilder},
     file::{
@@ -24,13 +25,14 @@ use parquet::{
     format::KeyValue,
     schema::{parser::parse_message_type, printer::print_parquet_metadata},
 };
-use polars::prelude::{DataFrame, ParquetReader, ParquetWriter, SerReader};
+use polars::prelude::{DataFrame, KeyValueMetadata, ParquetReader, ParquetWriter, SerReader};
 use polars_arrow::array::ViewType;
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+    fmt::format,
     fs::File,
     io::stdout,
-    path::Path,
+    path::{Path, PathBuf},
     sync::Arc,
 };
 
@@ -41,9 +43,26 @@ pub(super) fn set_metadata(
     path: impl AsRef<Path>,
     created_by: &str,
     mut key_values: Vec<KeyValue>,
-) -> Result<()> {
+) -> Result<PathBuf> {
     let input = path.as_ref();
-    let output = "OUTPUT.parquet";
+    let name = key_values
+        .iter()
+        .find_map(|key_value| (key_value.key == NAME).then_some(key_value.value.as_deref()))
+        .flatten()
+        .unwrap_or_default()
+        .to_pascal_case();
+    let date = key_values
+        .iter()
+        .find_map(|key_value| (key_value.key == DATE).then_some(key_value.value.as_deref()))
+        .flatten()
+        .unwrap_or_default();
+    let version = key_values
+        .iter()
+        .find_map(|key_value| (key_value.key == VERSION).then_some(key_value.value.as_deref()))
+        .flatten()
+        .unwrap_or_default();
+    let output = PathBuf::from(format!("{name}.{date}.{version}.{EXTENSION}"));
+    // let output = input.with_extension("metadata.parquet");
     // Metadata
     let reader = SerializedFileReader::new(File::open(input)?)?;
     let metadata = reader.metadata();
@@ -71,7 +90,7 @@ pub(super) fn set_metadata(
         .set_key_value_metadata(key_value_metadata)
         .build();
     let mut writer = ArrowWriter::try_new(
-        File::create(output)?,
+        File::create(&output)?,
         reader.schema(),
         Some(writer_properties),
     )?;
@@ -84,7 +103,7 @@ pub(super) fn set_metadata(
     //     writer.write(&batch).expect("writing data");
     // }
     writer.close()?;
-    Ok(())
+    Ok(output)
 }
 
 fn print_metadata_key_value(from: &[KeyValue], to: &[KeyValue], key: &str) {
@@ -252,11 +271,12 @@ pub(super) fn read_polars(path: impl AsRef<Path>) -> Result<()> {
 
 pub(super) fn write_polars(
     path: impl AsRef<Path>,
-    _meta: Metadata,
+    meta: Metadata,
     data: &mut DataFrame,
 ) -> Result<()> {
     let file = File::create(path)?;
     let writer = ParquetWriter::new(file);
+    // writer.with_key_value_metadata(Some(KeyValueMetadata::Static(meta.into())));
     writer.finish(data)?;
     Ok(())
 }
