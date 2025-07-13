@@ -56,9 +56,9 @@ fn main() -> Result<()> {
 }
 
 fn fix_metadata(path: &Path) -> Result<()> {
-    let name = "Acer Ukurunduense";
-    let version = "0.0.1";
-    let description = "2743, 2775";
+    let name = "Acer Ginnala";
+    let version = "0.0.3";
+    let description = "2738, 2774";
     let date = "2025-07-08";
     let output = parquet::set_metadata(
         path,
@@ -120,34 +120,34 @@ fn write_parquet(path: &Path) -> Result<()> {
             fatty_acid!(C24 { 15 => DC }                    )?,
         ], &data_type!(FATTY_ACID), true)?,
         TAG => [
-            Some(14047422.446)   ,
-            Some(7023913.743)    ,
-            Some(39670331.322)   ,
-            Some(72617978.065)   ,
-            Some(145640392.633)  ,
-            Some(1128691.236)    ,
-            Some(7226143.341)    ,
-            Some(973002.251)     ,
-            Some(33911367.036)   ,
-            Some(883380.376)     ,
-            Some(1649695.728)    ,
-            Some(68902557.008)   ,
-            Some(569997.620)     ,
-            Some(19272586.931)   ,
+            Some(7979670.454)    ,
+            Some(2295238.017)    ,
+            Some(10218630.561)   ,
+            Some(39083890.184)   ,
+            Some(90724727.520)   ,
+            Some(1929464.237)    ,
+            Some(3483557.731)    ,
+            Some(150650.284)     ,
+            Some(8531661.618)    ,
+            Some(219058.834)     ,
+            Some(523039.524)     ,
+            Some(27084176.029)   ,
+            Some(249251.243)     ,
+            Some(9670803.016)    ,
         ],
         MAG => [
-            Some(680242.033)     ,
-            Some(385234.962)     ,
-            Some(90184535.565)   ,
-            Some(54305963.077)   ,
-            Some(225125516.191)  ,
-            Some(1505580.175)    ,
-            Some(3713731.497)    ,
+            Some(2169340.502)    ,
+            Some(1689235.811)    ,
+            Some(27894720.561)   ,
+            Some(54572726.906)   ,
+            Some(182066477.200)  ,
+            Some(2798985.353)    ,
+            Some(1752513.118)    ,
             None                 ,
-            Some(966752.710)     ,
+            Some(517806.591)     ,
             None                 ,
             None                 ,
-            Some(322111.335)     ,
+            Some(262069.875)     ,
             None                 ,
             None                 ,
         ]
