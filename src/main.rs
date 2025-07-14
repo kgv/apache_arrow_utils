@@ -52,13 +52,114 @@ fn main() -> Result<()> {
     // write_parquet(&path)?;
     // fix_metadata(&path)?;
 
+    // let path = "Lobosphera-N.2025-04-24.0.0.1.utca.ipc";
+    // println!("to_ipc: {path:?}");
+    // let (mut meta, mut data) = ipc::polars::read(&path)?;
+    // println!("data: {data}");
+
     let paths = read_dir("_temp")?;
     for path in paths {
         let path = path?.path();
         println!("path: {}", path.display());
-        let frame = parquet::read_polars(&path)?;
-        let file = File::create(Path::new("_output").join(path.file_name().unwrap()))?;
-        frame.write_parquet(file)?;
+        let (meta, data) = ipc::polars::read(&path)?;
+        println!(
+            "frame: {:?}",
+            data.clone()
+                .drop("Index")
+                .unwrap()
+                .unnest(["FattyAcid"])
+                .unwrap()
+                .explode(["Unsaturated"])
+                .unwrap()
+                .unnest(["Unsaturated"])
+                .unwrap()
+        );
+        let data = data
+            .lazy()
+            .select([
+                col("Label"),
+                as_struct(vec![
+                    col("FattyAcid")
+                        .struct_()
+                        .field_by_name("Carbons")
+                        .alias("Carbon"),
+                    col("FattyAcid")
+                        .struct_()
+                        .field_by_name("Unsaturated")
+                        .list()
+                        .eval(as_struct(vec![
+                            col("").struct_().field_by_name("Index"),
+                            col("")
+                                .struct_()
+                                .field_by_name("Isomerism")
+                                .eq(1)
+                                .alias("Parity"),
+                            col("")
+                                .struct_()
+                                .field_by_name("Unsaturation")
+                                .eq(2)
+                                .alias("Triple"),
+                        ]))
+                        .alias("Bounds"),
+                ])
+                .alias("FattyAcid"),
+                col("Triacylglycerol"),
+                col("Diacylglycerol1223"),
+                col("Monoacylglycerol2"),
+            ])
+            .collect()?;
+        println!("data: {data:?}");
+        // let mut frame = parquet::read_polars(&path)?;
+        // frame.data = frame
+        //     .data
+        //     .lazy()
+        //     .select([
+        //         col("FattyAcid")
+        //             .map(
+        //                 |column| {
+        //                     let label = column
+        //                         .try_fatty_acid()?
+        //                         .format()?
+        //                         .into_iter()
+        //                         .map(|fatty_acid| match fatty_acid {
+        //                             Some("16:0") => "Palmitic".to_owned(),
+        //                             Some("18:0") => "Stearic".to_owned(),
+        //                             Some("18:3Δ6c,9c,12c") => "γLinolenic".to_owned(),
+        //                             Some("18:1Δ9c") => "Oleic".to_owned(),
+        //                             Some("18:2Δ9c,12c") => "Linoleic".to_owned(),
+        //                             Some("18:3Δ9c,12c,15c") => "αLinolenic".to_owned(),
+        //                             Some("18:1Δ11c") => "Octadecenoic11".to_owned(),
+        //                             Some("20:0") => "Arachidic".to_owned(),
+        //                             Some("20:1Δ11c") => "Gondoic".to_owned(),
+        //                             Some("20:2Δ11c,14c") => "DihomoLinoleic".to_owned(),
+        //                             Some("22:0") => "Behenic".to_owned(),
+        //                             Some("22:1Δ13c") => "Erucic".to_owned(),
+        //                             Some("24:0") => "Lignoceric".to_owned(),
+        //                             Some("24:1Δ15c") => "Nervonic".to_owned(),
+        //                             _ => unimplemented!(),
+        //                         })
+        //                         .collect::<Series>();
+        //                     Ok(Some(label.into_series().into_column()))
+        //                 },
+        //                 GetOutput::from_type(DataType::String),
+        //             )
+        //             .alias("Label"),
+        //         // lit("").alias("Label"),
+        //         col(FATTY_ACID),
+        //         col("TAG").alias("Triacylglycerol"),
+        //         lit(NULL)
+        //             .cast(DataType::Float64)
+        //             .alias("Diacylglycerol1223"),
+        //         col(MAG).alias("Monoacylglycerol2"),
+        //     ])
+        //     .collect()?;
+        // frame.data.rechunk_mut();
+        // frame.meta.remove("ARROW:schema");
+        // println!("frame.meta: {:?}", frame.meta);
+        // let path = Path::new("_output").join(path.file_name().unwrap());
+        // let file = File::create(&path)?;
+        // frame.write_parquet(file)?;
+        // parquet::read_polars(&path)?;
     }
     Ok(())
 }
