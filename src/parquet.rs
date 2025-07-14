@@ -9,7 +9,7 @@ use arrow::{
     ipc::reader::FileReader,
     util::pretty::print_batches,
 };
-use metadata::{AUTHORS, DATE, NAME, VERSION};
+use metadata::{AUTHORS, DATE, MetaDataFrame, NAME, VERSION};
 use parquet::{
     arrow::{ArrowWriter, arrow_reader::ParquetRecordBatchReaderBuilder},
     file::{
@@ -254,16 +254,19 @@ fn process_metadata(metadata: &ParquetMetaData) -> ParquetMetaData {
 //     Ok(())
 // }
 
-pub(super) fn read_polars(path: impl AsRef<Path>) -> Result<()> {
+pub(super) fn read_polars(path: impl AsRef<Path>) -> Result<MetaDataFrame> {
     let file = File::open(path)?;
-    let mut reader = ParquetReader::new(file).set_rechunk(true);
-    let meta = reader.get_metadata()?;
-    println!("meta: {meta:#?}");
-    let custom_meta = meta.key_value_metadata();
-    println!("custom_meta: {custom_meta:#?}");
-    let data = reader.finish()?;
-    println!("data: {data}");
-    Ok(())
+    let frame = MetaDataFrame::read_parquet(file)?;
+    println!("meta: {:#?}", frame.meta);
+    println!("data: {:?}", frame.data);
+    // let mut reader = ParquetReader::new(file).set_rechunk(true);
+    // let meta = reader.get_metadata()?;
+    // println!("created_by: {:?}", meta.created_by);
+    // let custom_meta = meta.key_value_metadata();
+    // println!("custom_meta: {custom_meta:#?}");
+    // let data = reader.finish()?;
+    // println!("data: {data}");
+    Ok(frame)
 }
 
 pub(super) fn write_polars(

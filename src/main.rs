@@ -5,14 +5,14 @@ use ::parquet::format::KeyValue;
 use anyhow::Result;
 use fatty_acid_macro::fatty_acid;
 use lipid::prelude::*;
-use metadata::{AUTHORS, DATE, DESCRIPTION, NAME, VERSION};
+use metadata::{AUTHORS, DATE, DESCRIPTION, MetaDataFrame, NAME, VERSION};
 use polars::prelude::*;
 use polars_arrow::array::Utf8ViewArray;
 use std::{
     borrow::BorrowMut,
     collections::BTreeMap,
     ffi::OsStr,
-    fs::File,
+    fs::{File, read_dir},
     num::NonZeroI8,
     path::{Path, PathBuf},
     sync::{Arc, LazyLock},
@@ -48,10 +48,18 @@ fn main() -> Result<()> {
     unsafe { std::env::set_var("POLARS_FMT_TABLE_CELL_LIST_LEN", "256") };
     unsafe { std::env::set_var("POLARS_FMT_STR_LEN", "256") };
 
-    let path = Path::new("CONFIG").with_extension(EXTENSION);
+    // let path = Path::new("CONFIG").with_extension(EXTENSION);
+    // write_parquet(&path)?;
+    // fix_metadata(&path)?;
 
-    write_parquet(&path)?;
-    fix_metadata(&path)?;
+    let paths = read_dir("_temp")?;
+    for path in paths {
+        let path = path?.path();
+        println!("path: {}", path.display());
+        let frame = parquet::read_polars(&path)?;
+        let file = File::create(Path::new("_output").join(path.file_name().unwrap()))?;
+        frame.write_parquet(file)?;
+    }
     Ok(())
 }
 
