@@ -38,8 +38,8 @@ use std::{
 
 pub type Metadata = BTreeMap<String, String>;
 
-const TAG: &str = "TAG";
-const MAG: &str = "MAG";
+const TAG: &str = "Triacylglycerol";
+const MAG: &str = "Monoacylglycerol2";
 const EXTENSION: &str = "utca.parquet";
 
 fn main() -> Result<()> {
@@ -61,7 +61,7 @@ fn main() -> Result<()> {
     for path in paths {
         let path = path?.path();
         println!("path: {}", path.display());
-        let (meta, data) = ipc::polars::read(&path)?;
+        let (meta, mut data) = ipc::polars::read(&path)?;
         println!(
             "frame: {:?}",
             data.clone()
@@ -74,7 +74,7 @@ fn main() -> Result<()> {
                 .unnest(["Unsaturated"])
                 .unwrap()
         );
-        let data = data
+        data = data
             .lazy()
             .select([
                 col("Label"),
@@ -92,7 +92,7 @@ fn main() -> Result<()> {
                             col("")
                                 .struct_()
                                 .field_by_name("Isomerism")
-                                .eq(1)
+                                .neq(1)
                                 .alias("Parity"),
                             col("")
                                 .struct_()
@@ -108,7 +108,13 @@ fn main() -> Result<()> {
                 col("Monoacylglycerol2"),
             ])
             .collect()?;
+        data.rechunk_mut();
+        println!("meta: {meta:?}");
         println!("data: {data:?}");
+        let path = Path::new("_output").join(path.file_name().unwrap());
+        let file = File::create(&path)?;
+        MetaDataFrame::new(metadata::Metadata(meta), &mut data).write_parquet(file)?;
+
         // let mut frame = parquet::read_polars(&path)?;
         // frame.data = frame
         //     .data
