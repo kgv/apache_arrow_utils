@@ -5,6 +5,7 @@ use ::parquet::format::KeyValue;
 use anyhow::Result;
 use fatty_acid_macro::fatty_acid;
 use lipid::prelude::*;
+use maplit::btreemap;
 use metadata::{AUTHORS, DATE, DESCRIPTION, MetaDataFrame, NAME, VERSION};
 use polars::prelude::*;
 use polars_arrow::array::Utf8ViewArray;
@@ -32,7 +33,7 @@ use std::{
 // https://github.com/apache/arrow-nanoarrow/issues/743
 // https://github.com/apache/arrow-rs/issues/7058
 
-// {123} {UUU} {U_3} {S_2U}
+// {123} {UUU} {U3} {S2U}
 // {13=2} {UU=U} {S2=U} {S_2=U} {SU=U}
 // {1-2-3} {U-U-U} {U-U-U}
 
@@ -43,6 +44,200 @@ const MAG: &str = "Monoacylglycerol2";
 const EXTENSION: &str = "utca.parquet";
 
 fn main() -> Result<()> {
+    unsafe { std::env::set_var("POLARS_FMT_MAX_ROWS", "256") };
+    unsafe { std::env::set_var("POLARS_FMT_TABLE_CELL_LIST_LEN", "256") };
+    unsafe { std::env::set_var("POLARS_FMT_STR_LEN", "256") };
+
+    // create_new();
+    fix();
+    Ok(())
+}
+
+fn fix() -> Result<()> {
+    let paths = read_dir("_temp")?;
+    for path in paths {
+        let path = path?.path();
+        println!("path: {}", path.display());
+        let (meta, mut data) = parquet::read_polars(&path)?;
+        // println!(
+        //     "frame: {:?}",
+        //     data.clone()
+        //         .drop("Index")
+        //         .unwrap()
+        //         .unnest(["FattyAcid"])
+        //         .unwrap()
+        //         .explode(["Unsaturated"])
+        //         .unwrap()
+        //         .unnest(["Unsaturated"])
+        //         .unwrap()
+        // );
+        // data = data
+        //     .lazy()
+        //     .select([
+        //         col("Label"),
+        //         as_struct(vec![
+        //             col("FattyAcid")
+        //                 .struct_()
+        //                 .field_by_name("Carbons")
+        //                 .alias("Carbon"),
+        //             col("FattyAcid")
+        //                 .struct_()
+        //                 .field_by_name("Unsaturated")
+        //                 .list()
+        //                 .eval(as_struct(vec![
+        //                     col("").struct_().field_by_name("Index"),
+        //                     col("")
+        //                         .struct_()
+        //                         .field_by_name("Isomerism")
+        //                         .neq(1)
+        //                         .alias("Parity"),
+        //                     col("")
+        //                         .struct_()
+        //                         .field_by_name("Unsaturation")
+        //                         .eq(2)
+        //                         .alias("Triple"),
+        //                 ]))
+        //                 .alias("Bounds"),
+        //         ])
+        //         .alias("FattyAcid"),
+        //         col("Triacylglycerol"),
+        //         col("Diacylglycerol1223"),
+        //         col("Monoacylglycerol2"),
+        //     ])
+        //     .collect()?;
+        // data.rechunk_mut();
+        // println!("meta: {meta:?}");
+        // println!("data: {data:?}");
+        // let path = Path::new("_output").join(path.file_name().unwrap());
+        // let file = File::create(&path)?;
+        // MetaDataFrame::new(metadata::Metadata(meta), &mut data).write_parquet(file)?;
+    }
+    Ok(())
+}
+
+fn create_new() -> Result<()> {
+    let name = "Acer Ginnala";
+    let version = "0.0.0";
+    let description = "";
+    let date = "2025-07-08";
+
+    // fatty_acid!(C18 { 9 => DC, 12 => DC, 15 => DC })?,
+    let mut data = df! {
+        "Label" => [
+            "Lau",
+            "Myr",
+            "Pam",
+            "Hx7",
+            "Hx9",
+            "Hx11",
+            "Pl7",
+            "Pl9",
+            "Ste",
+            "Ole",
+            "Vac",
+            "Lin",
+            "gLn",
+            "Eic",
+            "aLn",
+            "Etr",
+            "Ara",
+            "Epa",
+        ],
+        FATTY_ACID => Series::from_any_values_and_dtype(FATTY_ACID.into(), &[
+            fatty_acid!(C12 { })?,
+            fatty_acid!(C14 { })?,
+            fatty_acid!(C16 { })?,
+            fatty_acid!(C16 { 7 => DC })?,
+            fatty_acid!(C16 { 9 => DC })?,
+            fatty_acid!(C16 { 11 => DC })?,
+            fatty_acid!(C16 { })?,
+            fatty_acid!(C16 { })?,
+            fatty_acid!(C18 { 9 => DC })?,
+            fatty_acid!(C18 { 11 => DC })?,
+            fatty_acid!(C18 {  })?,
+            fatty_acid!(C18 { 9 => DC, 12 => DC })?,
+            fatty_acid!(C18 { 6 => DC, 9 => DC, 12 => DC })?,
+            fatty_acid!(C20 { })?,
+            fatty_acid!(C18 { 9 => DC, 12 => DC, 15 => DC })?,
+            fatty_acid!(C20 { })?,
+            fatty_acid!(C20 { 5 => DC, 8 => DC, 11 => DC, 14 => DC })?,
+            fatty_acid!(C20 { 5 => DC, 8 => DC, 11 => DC, 14 => DC, 17 => DC })?,
+        ], &data_type!(FATTY_ACID), true)?,
+        "Triacylglycerol" => [
+            826838.0,
+            19166586.0,
+            194135939.0,
+            413214.0,
+            502353681.0,
+            1256739.0,
+            1841010.0,
+            1065445.0,
+            5214161.0,
+            76679757.0,
+            6355360.0,
+            16231953.0,
+            1463315.0,
+            0.0,
+            1928323.0,
+            3217739.0,
+            12412792.0,
+            60308720.0,
+        ],
+        "Diacylglycerol1223" => [
+            103799.0,
+            2885359.0,
+            46309140.0,
+            103799.0,
+            59514208.0,
+            88967.0,
+            160945.0,
+            84169.0,
+            725608.0,
+            8752778.0,
+            711399.0,
+            2081406.0,
+            55799.0,
+            0.0,
+            321112.0,
+            203112.0,
+            705860.0,
+            2328292.0,
+        ],
+        "Monoacylglycerol2" => [
+            117004.0,
+            4929889.0,
+            103997156.0,
+            110716.0,
+            40060346.0,
+            273212.0,
+            135884.0,
+            349201.0,
+            4565674.0,
+            5867872.0,
+            589418.0,
+            6638446.0,
+            70146.0,
+            0.0,
+            2145298.0,
+            0.0,
+            243585.0,
+            2072911.0,
+        ],
+    }?;
+    let meta = metadata::Metadata(btreemap! {
+        AUTHORS.to_owned() => "Giorgi Vladimirovich Kazakov;Roman Alexandrovich Sidorov".to_owned(),
+        DATE.to_owned() => date.to_owned(),
+        DESCRIPTION.to_owned() => description.to_owned(),
+        NAME.to_owned() => name.to_owned(),
+        VERSION.to_owned() => version.to_owned(),
+    });
+    let path = Path::new("_output").join("TEMP").with_extension(EXTENSION);
+    let file = File::create(&path)?;
+    MetaDataFrame::new(meta, &mut data).write_parquet(file)?;
+    Ok(())
+}
+
+fn temp_to_output() -> Result<()> {
     // unsafe { std::env::set_var("POLARS_FMT_MAX_COLS", "256") };
     unsafe { std::env::set_var("POLARS_FMT_MAX_ROWS", "256") };
     unsafe { std::env::set_var("POLARS_FMT_TABLE_CELL_LIST_LEN", "256") };
