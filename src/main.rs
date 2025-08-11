@@ -18,6 +18,7 @@ use std::{
     path::{Path, PathBuf},
     sync::{Arc, LazyLock},
 };
+use walkdir::WalkDir;
 
 // file_named:\g\git\kgv\apache_arrow_ipc\output.hmf.parquet
 // created_byPolars
@@ -33,6 +34,7 @@ use std::{
 // https://github.com/apache/arrow-nanoarrow/issues/743
 // https://github.com/apache/arrow-rs/issues/7058
 
+// {1, 2, 3}
 // {123} {UUU} {U3} {S2U}
 // {13=2} {UU=U} {S2=U} {S_2=U} {SU=U}
 // {1-2-3} {U-U-U} {U-U-U}
@@ -49,183 +51,124 @@ fn main() -> Result<()> {
     unsafe { std::env::set_var("POLARS_FMT_STR_LEN", "256") };
 
     // create_new();
-    fix();
+    fix()?;
     Ok(())
 }
 
 fn fix() -> Result<()> {
-    let paths = read_dir("_temp")?;
-    for path in paths {
-        let path = path?.path();
+    let paths = WalkDir::new("_input");
+    for entry in paths {
+        let entry = entry?;
+        let path = entry.path();
         println!("path: {}", path.display());
-        let (meta, mut data) = parquet::read_polars(&path)?;
+        if !path.is_file() {
+            continue;
+        }
+        let mut frame = parquet::read_polars(&path)?;
+        // println!("frame: {}", frame.data);
         // println!(
         //     "frame: {:?}",
-        //     data.clone()
-        //         .drop("Index")
-        //         .unwrap()
+        //     frame
+        //         .data
+        //         .clone()
         //         .unnest(["FattyAcid"])
         //         .unwrap()
-        //         .explode(["Unsaturated"])
+        //         .explode(["Bounds"])
         //         .unwrap()
-        //         .unnest(["Unsaturated"])
+        //         .unnest(["Bounds"])
         //         .unwrap()
         // );
-        // data = data
-        //     .lazy()
-        //     .select([
-        //         col("Label"),
-        //         as_struct(vec![
-        //             col("FattyAcid")
-        //                 .struct_()
-        //                 .field_by_name("Carbons")
-        //                 .alias("Carbon"),
-        //             col("FattyAcid")
-        //                 .struct_()
-        //                 .field_by_name("Unsaturated")
-        //                 .list()
-        //                 .eval(as_struct(vec![
-        //                     col("").struct_().field_by_name("Index"),
-        //                     col("")
-        //                         .struct_()
-        //                         .field_by_name("Isomerism")
-        //                         .neq(1)
-        //                         .alias("Parity"),
-        //                     col("")
-        //                         .struct_()
-        //                         .field_by_name("Unsaturation")
-        //                         .eq(2)
-        //                         .alias("Triple"),
-        //                 ]))
-        //                 .alias("Bounds"),
-        //         ])
-        //         .alias("FattyAcid"),
-        //         col("Triacylglycerol"),
-        //         col("Diacylglycerol1223"),
-        //         col("Monoacylglycerol2"),
-        //     ])
-        //     .collect()?;
-        // data.rechunk_mut();
-        // println!("meta: {meta:?}");
+        frame.data = frame
+            .data
+            .lazy()
+            .select([
+                col("Label"),
+                as_struct(vec![
+                    col("FattyAcid")
+                        .struct_()
+                        .field_by_name("Carbon")
+                        .alias("Carbon"),
+                    col("FattyAcid")
+                        .struct_()
+                        .field_by_name("Bounds")
+                        .list()
+                        .eval(as_struct(vec![
+                            col("").struct_().field_by_name("Index"),
+                            col("").struct_().field_by_name("Triple"),
+                            col("").struct_().field_by_name("Parity"),
+                        ]))
+                        .alias("Indices"),
+                ])
+                .alias("FattyAcid"),
+                col("Triacylglycerol"),
+                col("Diacylglycerol1223"),
+                col("Monoacylglycerol2"),
+            ])
+            .collect()?;
+        frame.data.rechunk_mut();
+        frame.meta.remove("ARROW:schema");
+        println!("meta: {:?}", frame.meta);
         // println!("data: {data:?}");
-        // let path = Path::new("_output").join(path.file_name().unwrap());
-        // let file = File::create(&path)?;
-        // MetaDataFrame::new(metadata::Metadata(meta), &mut data).write_parquet(file)?;
+        let path = Path::new("_output").join(path.file_name().unwrap());
+        let file = File::create(&path)?;
+        frame.write_parquet(file)?;
     }
     Ok(())
 }
 
 fn create_new() -> Result<()> {
-    let name = "Acer Ginnala";
-    let version = "0.0.0";
+    let authors = "Giorgi Vladimirovich Kazakov,Roman Alexandrovich Sidorov";
+    let date = "2025-08-11";
     let description = "";
-    let date = "2025-07-08";
+    let name = "Commodity";
+    let version = "0.0.0";
 
-    // fatty_acid!(C18 { 9 => DC, 12 => DC, 15 => DC })?,
     let mut data = df! {
         "Label" => [
-            "Lau",
-            "Myr",
-            "Pam",
-            "Hx7",
-            "Hx9",
-            "Hx11",
-            "Pl7",
-            "Pl9",
-            "Ste",
-            "Ole",
-            "Vac",
-            "Lin",
-            "gLn",
-            "Eic",
-            "aLn",
-            "Etr",
-            "Ara",
-            "Epa",
+            "Myristic",
+            "Palmitic",
+            "Palmitoleic",
+            "Stearic",
+            "Oleic",
+            "Linoleic",
+            "Linolenic",
+            "Arachidic",
+            "Gondoic",
+            "Behenic",
+            "Erucic",
+            "Lignoceric",
         ],
         FATTY_ACID => Series::from_any_values_and_dtype(FATTY_ACID.into(), &[
-            fatty_acid!(C12 { })?,
-            fatty_acid!(C14 { })?,
-            fatty_acid!(C16 { })?,
-            fatty_acid!(C16 { 7 => DC })?,
-            fatty_acid!(C16 { 9 => DC })?,
-            fatty_acid!(C16 { 11 => DC })?,
-            fatty_acid!(C16 { })?,
-            fatty_acid!(C16 { })?,
-            fatty_acid!(C18 { 9 => DC })?,
-            fatty_acid!(C18 { 11 => DC })?,
-            fatty_acid!(C18 {  })?,
-            fatty_acid!(C18 { 9 => DC, 12 => DC })?,
-            fatty_acid!(C18 { 6 => DC, 9 => DC, 12 => DC })?,
-            fatty_acid!(C20 { })?,
-            fatty_acid!(C18 { 9 => DC, 12 => DC, 15 => DC })?,
-            fatty_acid!(C20 { })?,
-            fatty_acid!(C20 { 5 => DC, 8 => DC, 11 => DC, 14 => DC })?,
-            fatty_acid!(C20 { 5 => DC, 8 => DC, 11 => DC, 14 => DC, 17 => DC })?,
+            fatty_acid!(C14 { }),
+            fatty_acid!(C16 { }),
+            fatty_acid!(C16 { 9 => C }),
+            fatty_acid!(C18 { }),
+            fatty_acid!(C18 { 9 => C }),
+            fatty_acid!(C18 { 9 => C, 12 => C }),
+            fatty_acid!(C18 { 9 => C, 12 => C, 15 => C }),
+            fatty_acid!(C20 { }),
+            fatty_acid!(C20 { 11 => C }),
+            fatty_acid!(C22 { }),
+            fatty_acid!(C22 { 13 => C }),
+            fatty_acid!(C24 { }),
         ], &data_type!(FATTY_ACID), true)?,
-        "Triacylglycerol" => [
-            826838.0,
-            19166586.0,
-            194135939.0,
-            413214.0,
-            502353681.0,
-            1256739.0,
-            1841010.0,
-            1065445.0,
-            5214161.0,
-            76679757.0,
-            6355360.0,
-            16231953.0,
-            1463315.0,
+        "SN-1,2,3" => [
+            0.1,
+            10.2,
+            0.1,
+            4.1,
+            23.4,
+            52.8,
+            8.3,
+            0.3,
+            0.2,
+            0.3,
             0.0,
-            1928323.0,
-            3217739.0,
-            12412792.0,
-            60308720.0,
-        ],
-        "Diacylglycerol1223" => [
-            103799.0,
-            2885359.0,
-            46309140.0,
-            103799.0,
-            59514208.0,
-            88967.0,
-            160945.0,
-            84169.0,
-            725608.0,
-            8752778.0,
-            711399.0,
-            2081406.0,
-            55799.0,
-            0.0,
-            321112.0,
-            203112.0,
-            705860.0,
-            2328292.0,
-        ],
-        "Monoacylglycerol2" => [
-            117004.0,
-            4929889.0,
-            103997156.0,
-            110716.0,
-            40060346.0,
-            273212.0,
-            135884.0,
-            349201.0,
-            4565674.0,
-            5867872.0,
-            589418.0,
-            6638446.0,
-            70146.0,
-            0.0,
-            2145298.0,
-            0.0,
-            243585.0,
-            2072911.0,
+            0.1,
         ],
     }?;
     let meta = metadata::Metadata(btreemap! {
-        AUTHORS.to_owned() => "Giorgi Vladimirovich Kazakov;Roman Alexandrovich Sidorov".to_owned(),
+        AUTHORS.to_owned() => authors.to_owned(),
         DATE.to_owned() => date.to_owned(),
         DESCRIPTION.to_owned() => description.to_owned(),
         NAME.to_owned() => name.to_owned(),
@@ -416,18 +359,18 @@ fn write_parquet(path: &Path) -> Result<()> {
         FATTY_ACID => Series::from_any_values_and_dtype(FATTY_ACID.into(), &[
             fatty_acid!(C16 { }                             )?,
             fatty_acid!(C18 { }                             )?,
-            fatty_acid!(C18 { 6 => DC, 9 => DC, 12 => DC }  )?,
-            fatty_acid!(C18 { 9 => DC }                     )?,
-            fatty_acid!(C18 { 9 => DC, 12 => DC }           )?,
-            fatty_acid!(C18 { 9 => DC, 12 => DC, 15 => DC } )?,
-            fatty_acid!(C18 { 11 => DC }                    )?,
+            fatty_acid!(C18 { 6 => C, 9 => C, 12 => C }  )?,
+            fatty_acid!(C18 { 9 => C }                     )?,
+            fatty_acid!(C18 { 9 => C, 12 => C }           )?,
+            fatty_acid!(C18 { 9 => C, 12 => C, 15 => C } )?,
+            fatty_acid!(C18 { 11 => C }                    )?,
             fatty_acid!(C20 { }                             )?,
-            fatty_acid!(C20 { 11 => DC }                    )?,
-            fatty_acid!(C20 { 11 => DC, 14 => DC }          )?,
+            fatty_acid!(C20 { 11 => C }                    )?,
+            fatty_acid!(C20 { 11 => C, 14 => C }          )?,
             fatty_acid!(C22 { }                             )?,
-            fatty_acid!(C22 { 13 => DC }                    )?,
+            fatty_acid!(C22 { 13 => C }                    )?,
             fatty_acid!(C24 { }                             )?,
-            fatty_acid!(C24 { 15 => DC }                    )?,
+            fatty_acid!(C24 { 15 => C }                    )?,
         ], &data_type!(FATTY_ACID), true)?,
         TAG => [
             Some(7979670.454)    ,
@@ -611,28 +554,28 @@ fn ipc_to_ipc(input: impl AsRef<Path>) -> Result<PathBuf> {
             fatty_acid!(C15 { })?,
             fatty_acid!(C15 { 1 => U })?,
             fatty_acid!(C16 { })?,
-            fatty_acid!(C16 { 9 => DC })?,
+            fatty_acid!(C16 { 9 => C })?,
             fatty_acid!(C16 { 2 => U })?,
             fatty_acid!(C17 { })?,
             fatty_acid!(C17 { 1 => U })?,
             fatty_acid!(C18 { })?,
-            fatty_acid!(C18 { 9 => DC })?,
-            fatty_acid!(C18 { 9 => DC, 12 => DC })?,
-            fatty_acid!(C18 { 6 => DC, 9 => DC, 12 => DC })?,
-            fatty_acid!(C18 { 9 => DC, 12 => DC, 15 => DC })?,
+            fatty_acid!(C18 { 9 => C })?,
+            fatty_acid!(C18 { 9 => C, 12 => C })?,
+            fatty_acid!(C18 { 6 => C, 9 => C, 12 => C })?,
+            fatty_acid!(C18 { 9 => C, 12 => C, 15 => C })?,
             fatty_acid!(C20 { })?,
-            fatty_acid!(C20 { 11 => DC })?,
-            fatty_acid!(C20 { 11 => DC, 14 => DC })?,
-            fatty_acid!(C20 { 8 => DC, 11 => DC, 14 => DC })?,
-            fatty_acid!(C20 { 11 => DC, 14 => DC, 17 => DC })?,
-            fatty_acid!(C20 { 5 => DC, 8 => DC, 11 => DC, 14 => DC, 17 => DC })?,
-            fatty_acid!(C22 { 13 => DC })?,
-            fatty_acid!(C22 { 13 => DC, 16 => DC })?,
+            fatty_acid!(C20 { 11 => C })?,
+            fatty_acid!(C20 { 11 => C, 14 => C })?,
+            fatty_acid!(C20 { 8 => C, 11 => C, 14 => C })?,
+            fatty_acid!(C20 { 11 => C, 14 => C, 17 => C })?,
+            fatty_acid!(C20 { 5 => C, 8 => C, 11 => C, 14 => C, 17 => C })?,
+            fatty_acid!(C22 { 13 => C })?,
+            fatty_acid!(C22 { 13 => C, 16 => C })?,
             fatty_acid!(C23 { })?,
-            fatty_acid!(C22 { 7 => DC, 10 => DC, 13 => DC, 16 => DC })?,
-            fatty_acid!(C22 { 7 => DC, 10 => DC, 13 => DC, 16 => DC, 19 => DC })?,
-            fatty_acid!(C22 { 4 => DC, 7 => DC, 10 => DC, 13 => DC, 16 => DC })?,
-            fatty_acid!(C22 { 4 => DC, 7 => DC, 10 => DC, 13 => DC, 16 => DC, 19 => DC })?,
+            fatty_acid!(C22 { 7 => C, 10 => C, 13 => C, 16 => C })?,
+            fatty_acid!(C22 { 7 => C, 10 => C, 13 => C, 16 => C, 19 => C })?,
+            fatty_acid!(C22 { 4 => C, 7 => C, 10 => C, 13 => C, 16 => C })?,
+            fatty_acid!(C22 { 4 => C, 7 => C, 10 => C, 13 => C, 16 => C, 19 => C })?,
             fatty_acid!(C24 { })?,
             fatty_acid!(C24 { 1 => U })?,
         ], &data_type!(FATTY_ACID), true)?,
@@ -670,23 +613,23 @@ fn ipc_to_parquet(input: &Path) -> Result<PathBuf> {
             fatty_acid!(C17 { })?,
             fatty_acid!(C17 { 1 => U })?,
             fatty_acid!(C18 { })?,
-            fatty_acid!(C18 { 9 => DC })?,
-            fatty_acid!(C18 { 9 => DC, 12 => DC })?,
-            fatty_acid!(C18 { 6 => DC, 9 => DC, 12 => DC })?,
-            fatty_acid!(C18 { 9 => DC, 12 => DC, 15 => DC })?,
+            fatty_acid!(C18 { 9 => C })?,
+            fatty_acid!(C18 { 9 => C, 12 => C })?,
+            fatty_acid!(C18 { 6 => C, 9 => C, 12 => C })?,
+            fatty_acid!(C18 { 9 => C, 12 => C, 15 => C })?,
             fatty_acid!(C20 { })?,
-            fatty_acid!(C20 { 11 => DC })?,
-            fatty_acid!(C20 { 11 => DC, 14 => DC })?,
-            fatty_acid!(C20 { 8 => DC, 11 => DC, 14 => DC })?,
-            fatty_acid!(C20 { 11 => DC, 14 => DC, 17 => DC })?,
-            fatty_acid!(C20 { 5 => DC, 8 => DC, 11 => DC, 14 => DC, 17 => DC })?,
-            fatty_acid!(C22 { 13 => DC })?,
-            fatty_acid!(C22 { 13 => DC, 16 => DC })?,
+            fatty_acid!(C20 { 11 => C })?,
+            fatty_acid!(C20 { 11 => C, 14 => C })?,
+            fatty_acid!(C20 { 8 => C, 11 => C, 14 => C })?,
+            fatty_acid!(C20 { 11 => C, 14 => C, 17 => C })?,
+            fatty_acid!(C20 { 5 => C, 8 => C, 11 => C, 14 => C, 17 => C })?,
+            fatty_acid!(C22 { 13 => C })?,
+            fatty_acid!(C22 { 13 => C, 16 => C })?,
             fatty_acid!(C23 { })?,
-            fatty_acid!(C22 { 7 => DC, 10 => DC, 13 => DC, 16 => DC })?,
-            fatty_acid!(C22 { 7 => DC, 10 => DC, 13 => DC, 16 => DC, 19 => DC })?,
-            fatty_acid!(C22 { 4 => DC, 7 => DC, 10 => DC, 13 => DC, 16 => DC })?,
-            fatty_acid!(C22 { 4 => DC, 7 => DC, 10 => DC, 13 => DC, 16 => DC, 19 => DC })?,
+            fatty_acid!(C22 { 7 => C, 10 => C, 13 => C, 16 => C })?,
+            fatty_acid!(C22 { 7 => C, 10 => C, 13 => C, 16 => C, 19 => C })?,
+            fatty_acid!(C22 { 4 => C, 7 => C, 10 => C, 13 => C, 16 => C })?,
+            fatty_acid!(C22 { 4 => C, 7 => C, 10 => C, 13 => C, 16 => C, 19 => C })?,
             fatty_acid!(C24 { })?,
             fatty_acid!(C24 { 1 => U })?,
         ], &data_type!(FATTY_ACID), true)?,

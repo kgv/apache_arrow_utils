@@ -6,13 +6,13 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.98"
-arrow = { version = "55.2.0", features = ["ipc", "prettyprint"] }
+arrow = { version = "56.0.0", features = ["ipc", "prettyprint"] }
 fatty_acid_macro = { git = "https://github.com/ippras/fatty_acid_macro" }
 lipid = { git = "https://github.com/ippras/lipid" }
-maplit = "*"
+maplit = "1.0.2"
 metadata = { git = "https://github.com/ippras/metadata", branch = "map" }
-parquet = { version = "55.2.0", features = ["arrow", "json"] }
-polars = { version = "0.49.1", features = [
+parquet = { version = "56.0.0", features = ["arrow", "json"] }
+polars = { version = "0.50.0", features = [
     "dtype-full",
     "fmt_no_tty",
     "ipc",
@@ -20,7 +20,8 @@ polars = { version = "0.49.1", features = [
     "lazy",
     "parquet",
 ] }
-polars-arrow = { version = "0.49.1" }
+polars-arrow = { version = "0.50.0" }
+walkdir = "2.5.0"
 
 # arrow = { git = "https://github.com/apache/arrow-rs", features = [
 # parquet = { git = "https://github.com/apache/arrow-rs", features = [
