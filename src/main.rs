@@ -117,113 +117,65 @@ fn fix() -> Result<()> {
 }
 
 fn create_new() -> Result<()> {
-    let name = "C-70(Control)";
+    let name = "Euonymus Sachalinensis";
     let authors = "Giorgi Vladimirovich Kazakov,Roman Alexandrovich Sidorov";
-    let date = "2023-10-24";
-    let description = "";
+    let date = "2014-06-19";
+    let description = "https://doi.org/10.1007/s11746-014-2553-8";
     let version = "0.0.0";
 
     let mut data = df! {
         "Label" => [
-            "Lau",
-            "Myr",
-            "Pam",
-            "Hx7",
-            "Hx9",
-            "Hx11",
-            "Pl7",
-            "Pl9",
-            "Ste",
-            "Ole",
-            "Vac",
-            "Lin",
-            "Gln",
-            "Eic",
-            "ALn",
-            "Etr",
-            "Ara",
-            "Epa",
+            "P",
+            "St",
+            "H",
+            "O",
+            "L",
+            "Ln",
         ],
         FATTY_ACID => Series::from_any_values_and_dtype(FATTY_ACID.into(), &[
-            fatty_acid!(C12 {})?,
-            fatty_acid!(C14 {})?,
             fatty_acid!(C16 {})?,
-            fatty_acid!(C16 {7 => C})?,
-            fatty_acid!(C16 {9 => C})?,
-            fatty_acid!(C16 {11 => C})?,
-            fatty_acid!(C16 {0 => C, 0 => C})?,
-            fatty_acid!(C16 {0 => C, 0 => C})?,
             fatty_acid!(C18 {})?,
+            fatty_acid!(C16 {7 => C})?,
             fatty_acid!(C18 {9 => C})?,
-            fatty_acid!(C18 {11 => C})?,
             fatty_acid!(C18 {9 => C, 12 => C})?,
-            fatty_acid!(C18 {6 => C, 9 => C, 12 => C})?,
-            fatty_acid!(C20 {})?,
             fatty_acid!(C18 {9 => C, 12 => C, 15 => C})?,
-            fatty_acid!(C20 {})?,
-            fatty_acid!(C20 {5 => C, 8 => C, 11 => C, 14 => C})?,
-            fatty_acid!(C20 {5 => C, 8 => C, 11 => C, 14 => C, 17 => C})?,
         ], &data_type!(FATTY_ACID), true)?,
-        "Triacylglycerol" => [
-            826838.0,
-            19166586.0,
-            194135939.0,
-            413214.0,
-            502353681.0,
-            1256739.0,
-            1841010.0,
-            1065445.0,
-            5214161.0,
-            76679757.0,
-            6355360.0,
-            16231953.0,
-            1463315.0,
-            0.0,
-            1928323.0,
-            3217739.0,
-            12412792.0,
-            60308720.0,
+        STEREOSPECIFIC_NUMBERS123=> [
+            33.7 , 5.3  , 0.4  , 47.2 , 11.9 , 0.7
         ],
-        "Diacylglycerol1223" => [
-            103799.0,
-            2885359.0,
-            46309140.0,
-            103799.0,
-            59514208.0,
-            88967.0,
-            160945.0,
-            84169.0,
-            725608.0,
-            8752778.0,
-            711399.0,
-            2081406.0,
-            55799.0,
-            0.0,
-            321112.0,
-            203112.0,
-            705860.0,
-            2328292.0,
+        STEREOSPECIFIC_NUMBERS2 => [
+            0.4  , 0.0  , 0.0  , 68.2 , 30.8 , 0.6
         ],
-        "Monoacylglycerol2" => [
-            117004.0,
-            4929889.0,
-            103997156.0,
-            110716.0,
-            40060346.0,
-            273212.0,
-            135884.0,
-            349201.0,
-            4565674.0,
-            5867872.0,
-            589418.0,
-            6638446.0,
-            70146.0,
-            0.0,
-            2145298.0,
-            0.0,
-            243585.0,
-            2072911.0,
-        ]
+        // STEREOSPECIFIC_NUMBERS12_23 => [
+        //     156323.0,
+        //     1619776.0,
+        //     21376267.0,
+        //     114449.0,
+        //     23378247.0,
+        //     46815.0,
+        //     86449.0,
+        //     0.0,
+        //     213122.0,
+        //     8616225.0,
+        //     313650.0,
+        //     5637541.0,
+        //     81310.0,
+        //     0.0,
+        //     0.0,
+        //     79760.0,
+        //     230362.0,
+        //     1316465.0,
+        // ],
+        // STEREOSPECIFIC_NUMBERS2 => df!{
+        //     "RetentionTime" => [
+        //         Some(10.071),
+        //         None,
+        //         Some(32.783),
+        //     ],
+        //     "PeakArea" => [
+        //         77949.0,
+        //     ]
+        // }?.into_struct(PlSmallStr::EMPTY),
     }?;
     let meta = metadata::Metadata(btreemap! {
         AUTHORS.to_owned() => authors.to_owned(),
@@ -232,7 +184,9 @@ fn create_new() -> Result<()> {
         NAME.to_owned() => name.to_owned(),
         VERSION.to_owned() => version.to_owned(),
     });
-    let path = Path::new("_output").join("TEMP").with_extension(EXTENSION);
+    let path = Path::new("_output")
+        .join(meta.format(".").to_string())
+        .with_added_extension(EXTENSION);
     let file = File::create(&path)?;
     MetaDataFrame::new(meta, &mut data).write_parquet(file)?;
     Ok(())
