@@ -6,22 +6,36 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.100"
-arrow = { version = "56.1.0", features = ["ipc", "prettyprint"] }
 fatty_acid_macro = { git = "https://github.com/ippras/fatty_acid_macro" }
-lipid = { git = "https://github.com/ippras/lipid" }
 maplit = "1.0.2"
-metadata = { git = "https://github.com/ippras/metadata", branch = "map" }
-parquet = { version = "56.1.0", features = ["arrow", "json"] }
-polars = { version = "0.51.0", features = [
-    "dtype-full",
-    "fmt_no_tty",
-    "ipc",
-    "json",
-    "lazy",
-    "parquet",
+polars = { git = "https://github.com/pola-rs/polars", rev = "5594b81b1177ad20ebecff8ad4c807b1816647ff", features = [
+    "dtype-i8",
+    "dtype-struct",
+    "strings",
+    #
+    "dtype-datetime",
+    "timezones",
 ] }
-polars-arrow = { version = "0.51.0" }
+ron = "0.11.0"
 walkdir = "2.5.0"
+
+lipid = { git = "https://github.com/ippras/lipid", branch = "new-polars" }
+metadata = { git = "https://github.com/ippras/metadata", branch = "new-polars", features = [
+    "egui",
+    "polars",
+] }
+
+# polars-arrow = { version = "0.51.0" }
+# arrow = { version = "56.1.0", features = ["ipc", "prettyprint"] }
+# parquet = { version = "56.1.0", features = ["arrow", "json"] }
+# polars = { version = "0.51.0", features = [
+#     "dtype-full",
+#     "fmt_no_tty",
+#     "ipc",
+#     "json",
+#     "lazy",
+#     "parquet",
+# ] }
 
 # arrow = { git = "https://github.com/apache/arrow-rs", features = [
 # parquet = { git = "https://github.com/apache/arrow-rs", features = [

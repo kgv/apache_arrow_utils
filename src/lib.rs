@@ -50,19 +50,19 @@ use std::fs::File;
 //     Ok(())
 // }
 
-#[test]
-fn read_ipc_via_arrow() -> Result<()> {
-    use arrow::ipc::reader::FileReader;
+// #[test]
+// fn read_ipc_via_arrow() -> Result<()> {
+//     use arrow::ipc::reader::FileReader;
 
-    let file = File::open("MatureMilkFat.hmfa.arrow")?;
-    let reader = FileReader::try_new(file, None)?;
-    let schema = reader.schema();
-    println!("schema: {schema:#?}");
-    // Error: Parser error: Unable to get root as message: Unaligned { position:
-    // 100, unaligned_type: "i64", error_trace: ErrorTrace([TableField {
-    // field_name: "variadicBufferCounts", position: 72 }, TableField {
-    // field_name: "data", position: 40 }, UnionVariant { variant:
-    // "MessageHeader::DictionaryBatch", position: 16 }, TableField {
-    // field_name: "header", position: 16 }]) }
-    Ok(())
-}
+//     let file = File::open("MatureMilkFat.hmfa.arrow")?;
+//     let reader = FileReader::try_new(file, None)?;
+//     let schema = reader.schema();
+//     println!("schema: {schema:#?}");
+//     // Error: Parser error: Unable to get root as message: Unaligned { position:
+//     // 100, unaligned_type: "i64", error_trace: ErrorTrace([TableField {
+//     // field_name: "variadicBufferCounts", position: 72 }, TableField {
+//     // field_name: "data", position: 40 }, UnionVariant { variant:
+//     // "MessageHeader::DictionaryBatch", position: 16 }, TableField {
+//     // field_name: "header", position: 16 }]) }
+//     Ok(())
+// }
