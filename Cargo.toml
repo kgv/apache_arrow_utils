@@ -8,19 +8,19 @@ edition = "2024"
 anyhow = "1.0.100"
 fatty_acid_macro = { git = "https://github.com/ippras/fatty_acid_macro" }
 maplit = "1.0.2"
-polars = { git = "https://github.com/pola-rs/polars", rev = "5594b81b1177ad20ebecff8ad4c807b1816647ff", features = [
+polars = { version = "0.52.0", features = [
     "dtype-i8",
     "dtype-struct",
     "strings",
     #
-    "dtype-datetime",
+    # "dtype-datetime",
     "timezones",
 ] }
 ron = "0.11.0"
 walkdir = "2.5.0"
 
-lipid = { git = "https://github.com/ippras/lipid", branch = "new-polars" }
-metadata = { git = "https://github.com/ippras/metadata", branch = "new-polars", features = [
+lipid = { git = "https://github.com/ippras/lipid" }
+metadata = { git = "https://github.com/ippras/metadata", features = [
     "egui",
     "polars",
 ] }
