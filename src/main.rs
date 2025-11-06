@@ -80,8 +80,8 @@ fn main() -> Result<()> {
 fn create_new() -> Result<()> {
     let name = "К-3714";
     let date = "2025-10-31";
-    let version = "0.0.3";
-    let description = "К-3714, ВИР 172Б, Россия\n#2905, #3191";
+    let version = "0.0.2";
+    let description = "К-3714, ВИР 172Б, Россия\n#2904, #3189";
     let authors = "Giorgi Vladimirovich Kazakov,Roman Alexandrovich Sidorov";
 
     let data = df! {
@@ -104,20 +104,20 @@ fn create_new() -> Result<()> {
                         fatty_acid!(C22 {})?,
                     ], &data_type!(FATTY_ACID), true)?,
                     STEREOSPECIFIC_NUMBERS123=> [
-    39269486.990,
-    19980005.446,
-    217471858.102,
-    5067018.233,
-    299311414.425,
-    929196.610,
-    1962170.750,
+    35981173.982,
+    19475043.577,
+    213853841.431,
+    5093013.983,
+    286270506.018,
+    965778.126,
+    1857847.016,
                     ],
                     STEREOSPECIFIC_NUMBERS2 => [
-    228070.651,
+    135655.710,
     0.0,
-    5558181.756,
+    5857044.707,
     0.0,
-    9946451.895,
+    12944265.127,
     0.0,
     0.0,
                     ],
