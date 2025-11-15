@@ -175,113 +175,113 @@ fn christie() -> Result<()> {
 // fatty_acid!(C24 {15 => C});
 
 fn create_new() -> Result<()> {
-    let name = "Lunaria rediviva, seed, 0mm";
+    let name = "Lunaria rediviva, seed, 2mm";
     let authors = "Giorgi Vladimirovich Kazakov,Roman Alexandrovich Sidorov";
-    let date = "2024-05-27";
-    let description = "(100 uL 17:0)\n#1729";
+    let date = "2024-06-07";
+    let description = "(100 uL 17:0)\n#1785";
     let version = "0.0.1";
 
     let data = df! {
-                    "Label" => [
-"Methyl tetradecanoate",
-"Pentadecanoic acid, methyl ester",
-"Hexadecanoic acid, methyl ester",
-"9-Hexadecenoic acid, methyl ester, (Z)-",
-"Heptadecanoic acid, methyl ester",
-"Methyl stearate",
-"7,10,13-Hexadecatrienoic acid, methyl ester",
-"9-Octadecenoic acid (Z)-, methyl ester",
-"11-Octadecenoic acid, methyl ester",
-"Nonadecanoic acid, methyl ester",
-"9,12-Octadecadienoic acid (Z,Z)-, methyl ester",
-"Eicosanoic acid, methyl ester",
-"9,12,15-Octadecatrienoic acid, methyl ester, (Z,Z,Z)-",
-"11-Eicosenoic acid, methyl ester",
-"11,14,17-Eicosatrienoic acid, methyl ester",
-"13-Docosenoic acid, methyl ester, (Z)-",
-"Docosanoic acid, methyl ester",
-"Tetracosanoic acid, methyl ester",
-"15-Tetracosenoic acid, methyl ester",
-"Hexacosanoic acid, methyl ester",
-                    ],
-                    // fatty_acid!(C16 {9 => C})?,
-                    FATTY_ACID => [
-fatty_acid!(C14 {})?,
-fatty_acid!(C15 {})?,
-fatty_acid!(C16 {})?,
-fatty_acid!(C16 {11=>C})?,
-fatty_acid!(C17 {})?,
-fatty_acid!(C18 {})?,
-fatty_acid!(C16 {7=>C,10=>C,13=>C})?,
-fatty_acid!(C18 {9=>C})?,
-fatty_acid!(C18 {11=>C})?,
-fatty_acid!(C19 {})?,
-fatty_acid!(C18 {9=>C,12=>C})?,
-fatty_acid!(C20 {})?,
-fatty_acid!(C18 {9=>C,12=>C,15=>C})?,
-fatty_acid!(C20 {11=>C})?,
-fatty_acid!(C22 {})?,
-fatty_acid!(C20 {11=>C,14=>C,17=>C})?,
-fatty_acid!(C22 {11=>C})?,
-fatty_acid!(C24 {})?,
-fatty_acid!(C24 {15=>C})?,
-fatty_acid!(C26 {})?,
-                    ],
-                    STEREOSPECIFIC_NUMBERS123=> [
-957480.482,
-1227075.897,
-109324502.272,
-248794.735,
-151796513.479,
-1850022.099,
-7739374.423,
-31658072.350,
-1291846.007,
-120402542.791,
-613851.150,
-1458471.003,
-187165940.868,
-688305.178,
-547907.128,
-2715929.384,
-487014.199,
-3144813.966,
-2006113.454,
-0.000,
-                    ],
-                    STEREOSPECIFIC_NUMBERS2 => [
-0.0,
-0.0,
-0.0,
-0.0,
-0.0,
-0.0,
-0.0,
-0.0,
-0.0,
-0.0,
-0.0,
-0.0,
-0.0,
-0.0,
-0.0,
-0.0,
-0.0,
-0.0,
-0.0,
-0.0,
-                    ],
-                    // STEREOSPECIFIC_NUMBERS2 => df!{
-                    //     "RetentionTime" => [
-                    //         Some(10.071),
-                    //         None,
-                    //         Some(32.783),
-                    //     ],
-                    //     "PeakArea" => [
-                    //         77949.0,
-                    //     ]
-                    // }?.into_struct(PlSmallStr::EMPTY),
-    }?;
+                        "Label" => [
+    "Methyl tetradecanoate",
+    "Pentadecanoic acid, methyl ester",
+    "Hexadecanoic acid, methyl ester",
+    "9-Hexadecenoic acid, methyl ester, (Z)-",
+    "Heptadecanoic acid, methyl ester",
+    "Methyl stearate",
+    "7,10,13-Hexadecatrienoic acid, methyl ester",
+    "9-Octadecenoic acid (Z)-, methyl ester",
+    "11-Octadecenoic acid, methyl ester",
+    "Nonadecanoic acid, methyl ester",
+    "9,12-Octadecadienoic acid (Z,Z)-, methyl ester",
+    "Eicosanoic acid, methyl ester",
+    "9,12,15-Octadecatrienoic acid, methyl ester, (Z,Z,Z)-",
+    "11-Eicosenoic acid, methyl ester",
+    "11,14,17-Eicosatrienoic acid, methyl ester",
+    "13-Docosenoic acid, methyl ester, (Z)-",
+    "Docosanoic acid, methyl ester",
+    "Tetracosanoic acid, methyl ester",
+    "15-Tetracosenoic acid, methyl ester",
+    "Hexacosanoic acid, methyl ester",
+                        ],
+                        // fatty_acid!(C16 {9 => C})?,
+                        FATTY_ACID => [
+    fatty_acid!(C14 {})?, // 14:0
+    fatty_acid!(C15 {})?, // 15:0
+    fatty_acid!(C16 {})?, // 16:0
+    fatty_acid!(C16 {9=>C})?, // 16:1-9
+    fatty_acid!(C17 {})?, // 17:0
+    fatty_acid!(C18 {})?, // 18:0
+    fatty_acid!(C16 {7=>C,10=>C,13=>C})?, // 16:3-7,10,13
+    fatty_acid!(C18 {9=>C})?, // 18:1-9
+    fatty_acid!(C18 {11=>C})?, // 18:1-11
+    fatty_acid!(C19 {})?, // 19:0
+    fatty_acid!(C18 {9=>C,12=>C})?, // 18:2-9,12
+    fatty_acid!(C20 {})?, // 20:0
+    fatty_acid!(C18 {9=>C,12=>C,15=>C})?, // 18:3-9,12,15
+    fatty_acid!(C20 {11=>C})?, // 20:1-11
+    fatty_acid!(C20 {11=>C,14=>C,17=>C})?, // 20:3-11,14,17
+    fatty_acid!(C22 {11=>C})?, // 22:1-13
+    fatty_acid!(C22 {})?, // 22:0
+    fatty_acid!(C24 {})?, // 24:0
+    fatty_acid!(C24 {15=>C})?, // 24:1-15
+    fatty_acid!(C26 {})?, // 26:0
+                        ],
+                        STEREOSPECIFIC_NUMBERS123=> [
+    1381815.398,
+    1677823.700,
+    131116179.233,
+    1072319.098,
+    144925035.386,
+    9300343.554,
+    2326471.151,
+    40434095.863,
+    1567756.936,
+    698050.739,
+    156467268.186,
+    1046702.772,
+    186680547.914,
+    1385905.020,
+    2509907.378,
+    589650.312,
+    802401.446,
+    2780998.865,
+    2455853.947,
+    328773.224,
+                        ],
+                        STEREOSPECIFIC_NUMBERS2 => [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+                        ],
+                        // STEREOSPECIFIC_NUMBERS2 => df!{
+                        //     "RetentionTime" => [
+                        //         Some(10.071),
+                        //         None,
+                        //         Some(32.783),
+                        //     ],
+                        //     "PeakArea" => [
+                        //         77949.0,
+                        //     ]
+                        // }?.into_struct(PlSmallStr::EMPTY),
+        }?;
     let meta = metadata::Metadata(btreemap! {
         AUTHORS.to_owned() => authors.to_owned(),
         DATE.to_owned() => date.to_owned(),
