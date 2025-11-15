@@ -2,7 +2,7 @@ use anyhow::Result;
 use fatty_acid_macro::fatty_acid;
 use lipid::prelude::*;
 use maplit::btreemap;
-use metadata::{AUTHORS, DATE, DESCRIPTION, NAME, VERSION, polars::MetaDataFrame};
+use metadata::{AUTHORS, DATE, DEFAULT_DATE, DESCRIPTION, NAME, VERSION, polars::MetaDataFrame};
 use polars::prelude::*;
 use ron::{extensions::Extensions, ser::PrettyConfig};
 use std::{
@@ -47,9 +47,132 @@ fn main() -> Result<()> {
     unsafe { std::env::set_var("POLARS_FMT_TABLE_CELL_LIST_LEN", "256") };
     unsafe { std::env::set_var("POLARS_FMT_STR_LEN", "256") };
 
-    create_new()?;
+    christie()?;
+    // create_new()?;
     Ok(())
 }
+
+fn christie() -> Result<()> {
+    // let path = "D:/git/kgv/apache_arrow_utils/Christie.ipc";
+    // let file = File::open(path).unwrap();
+    // let mut reader = IpcReader::new(file);
+    // let meta = reader.custom_metadata().unwrap();
+    // println!("meta: {meta:?}");
+    // let data = reader.finish().unwrap();
+    // println!("data: {data}");
+
+    let name = "Christie";
+    let authors = "Giorgi Vladimirovich Kazakov,Roman Alexandrovich Sidorov";
+    let date = DEFAULT_DATE;
+    let description = "";
+    let version = "0.0.0";
+    let meta = metadata::Metadata(btreemap! {
+        AUTHORS.to_owned() => authors.to_owned(),
+        DATE.to_owned() => date.to_owned(),
+        DESCRIPTION.to_owned() => description.to_owned(),
+        NAME.to_owned() => name.to_owned(),
+        VERSION.to_owned() => version.to_owned(),
+    });
+    println!("meta: {meta:?}");
+    let data = df! {
+        FATTY_ACID => [
+            fatty_acid!(C10 {})?,
+            fatty_acid!(C11 {})?,
+            fatty_acid!(C12 {})?,
+            fatty_acid!(C13 {})?,
+            fatty_acid!(C14 {})?,
+            fatty_acid!(C15 {})?,
+            fatty_acid!(C15 {9 => C})?,
+            fatty_acid!(C16 {})?,
+            fatty_acid!(C16 {9 => C})?,
+            fatty_acid!(C18 {7 => C})?,
+            fatty_acid!(C18 {9 => C})?,
+            fatty_acid!(C18 {8 => C, 10 => C})?,
+            fatty_acid!(C18 {9 => C, 12 => C})?,
+            fatty_acid!(C18 {6 => C, 9 => C, 12 => C})?,
+            fatty_acid!(C18 {9 => C, 12 => C, 15 => C})?,
+            fatty_acid!(C20 {})?,
+            fatty_acid!(C20 {11 => C})?,
+            fatty_acid!(C20 {11 => C, 14 => C})?,
+            fatty_acid!(C21 {})?,
+            fatty_acid!(C20 {5 => C, 8 => C, 11 => C, 14 => C})?,
+            fatty_acid!(C20 {5 => C, 8 => C, 11 => C, 14 => C, 17 => C})?,
+            fatty_acid!(C22 {})?,
+            fatty_acid!(C22 {13 => C})?,
+            fatty_acid!(C23 {})?,
+            fatty_acid!(C24 {})?,
+            fatty_acid!(C22 {4 => C, 7 => C, 10 => C, 13 => C, 16 => C, 19 => C})?,
+            fatty_acid!(C24 {15 => C})?,
+        ],
+        "Factor" => [
+            1.36,
+            1.319,
+            1.278,
+            1.238,
+            1.196,
+            1.158,
+            1.158,
+            1.109,
+            1.116,
+            0.997,
+            0.997,
+            1.112,
+            1.112,
+            1.265,
+            1.265,
+            0.987,
+            0.976,
+            1.3,
+            0.99,
+            1.385,
+            1.247,
+            0.958,
+            0.932,
+            0.933,
+            0.922,
+            1.494,
+            0.888,
+        ],
+    }?;
+    println!("data: {data}");
+
+    let frame = MetaDataFrame::new(meta, data);
+    let serialized = ron::ser::to_string_pretty(
+        &frame,
+        PrettyConfig::new().extensions(Extensions::UNWRAP_NEWTYPES),
+    )?;
+    let mut file = File::create("D:/git/kgv/apache_arrow_utils/Christie.ron").unwrap();
+    file.write_all(serialized.as_bytes())?;
+    Ok(())
+}
+
+// fatty_acid!(C10 {});
+// fatty_acid!(C11 {});
+// fatty_acid!(C12 {});
+// fatty_acid!(C13 {});
+// fatty_acid!(C14 {});
+// fatty_acid!(C15 {});
+// fatty_acid!(C15 {9 => C});
+// fatty_acid!(C16 {});
+// fatty_acid!(C16 {9 => C});
+// fatty_acid!(C18 {7 => C});
+// fatty_acid!(C18 {9 => C});
+// fatty_acid!(C18 {8 => C, 10 => C});
+// fatty_acid!(C18 {9 => C, 12 => C});
+// fatty_acid!(C18 {6 => C, 9 => C, 12 => C});
+// fatty_acid!(C18 {9 => C, 12 => C, 15 => C});
+// fatty_acid!(C20 {});
+// fatty_acid!(C20 {11 => C});
+// fatty_acid!(C20 {11 => C, 14 => C});
+// fatty_acid!(C21 {});
+// fatty_acid!(C20 {5 => C, 8 => C, 11 => C, 14 => C});
+// fatty_acid!(C20 {5 => C, 8 => C, 11 => C, 14 => C, 17 => C});
+// fatty_acid!(C22 {});
+// fatty_acid!(C22 {13 => C});
+// fatty_acid!(C23 {});
+// fatty_acid!(C24 {});
+// fatty_acid!(C22 {4 => C, 7 => C, 10 => C, 13 => C, 16 => C, 19 => C});
+// fatty_acid!(C24 {15 => C});
 
 // | #   | Идентификатор            |
 // | --- | ------------------------ |
@@ -61,11 +184,11 @@ fn main() -> Result<()> {
 // | 6   | К-3714, ВИР 172Б, Россия |
 // | 7   | К-2776, ВИР 136, Россия  |
 fn create_new() -> Result<()> {
-    let name = "К-2233";
+    let name = "К-3599";
     let authors = "Giorgi Vladimirovich Kazakov,Roman Alexandrovich Sidorov";
-    let date = "2025-10-29";
-    let description = "К-2233, Прогресс, Россия\n#2887, #3165";
-    let version = "0.0.3";
+    let date = "2025-09-03";
+    let description = "К-3599, RIL-130, Франция\n#2893, #3176";
+    let version = "0.0.1";
 
     let data = df! {
                     "Label" => [

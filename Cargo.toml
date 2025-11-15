@@ -11,6 +11,7 @@ maplit = "1.0.2"
 polars = { version = "0.52.0", features = [
     "dtype-i8",
     "dtype-struct",
+    "ipc",
     "strings",
     #
     # "dtype-datetime",
