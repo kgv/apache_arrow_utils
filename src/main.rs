@@ -183,71 +183,80 @@ fn create_new() -> Result<()> {
 
     let data = df! {
                         "Label" => [
-    "Methyl tetradecanoate",
-    "Pentadecanoic acid, methyl ester",
-    "Hexadecanoic acid, methyl ester",
-    "9-Hexadecenoic acid, methyl ester, (Z)-",
-    "Heptadecanoic acid, methyl ester",
-    "Methyl stearate",
-    "7,10,13-Hexadecatrienoic acid, methyl ester",
-    "9-Octadecenoic acid (Z)-, methyl ester",
-    "11-Octadecenoic acid, methyl ester",
-    "Nonadecanoic acid, methyl ester",
-    "9,12-Octadecadienoic acid (Z,Z)-, methyl ester",
-    "Eicosanoic acid, methyl ester",
-    "9,12,15-Octadecatrienoic acid, methyl ester, (Z,Z,Z)-",
-    "11-Eicosenoic acid, methyl ester",
-    "11,14,17-Eicosatrienoic acid, methyl ester",
-    "13-Docosenoic acid, methyl ester, (Z)-",
-    "Docosanoic acid, methyl ester",
-    "Tetracosanoic acid, methyl ester",
-    "15-Tetracosenoic acid, methyl ester",
-    "Hexacosanoic acid, methyl ester",
+"Methyl tetradecanoate                                 ",
+"Pentadecanoic acid, methyl ester                      ",
+"Hexadecanoic acid, methyl ester                       ",
+"7-Hexadecenoic acid, methyl ester, (Z)-               ",
+"9-Hexadecenoic acid, methyl ester, (Z)-               ",
+"Heptadecanoic acid, methyl ester                      ",
+"7,10-Hexadecadienoic acid, methyl ester               ",
+"Methyl stearate                                       ",
+"7,10,13-Hexadecatrienoic acid, methyl ester           ",
+"9-Octadecenoic acid (Z)-, methyl ester                ",
+"11-Octadecenoic acid, methyl ester, (Z)-              ",
+"9,12-Octadecadienoic acid (Z,Z)-, methyl ester        ",
+"Eicosanoic acid, methyl ester                         ",
+"9,12,15-Octadecatrienoic acid, methyl ester, (Z,Z,Z)- ",
+"11-Eicosenoic acid, methyl ester                      ",
+"cis-11,14-Eicosadienoic acid, methyl ester            ",
+"Docosanoic acid, methyl ester                         ",
+"11,14,17-Eicosatrienoic acid, methyl ester            ",
+"13-Docosenoic acid, methyl ester, (Z)-                ",
+"Tetracosanoic acid, methyl ester                      ",
+"15-Tetracosenoic acid, methyl ester                   ",
+"Hexacosanoic acid, methyl ester                       ",
+"Methyl 17-hexacosenoate                               ",
                         ],
                         // fatty_acid!(C16 {9 => C})?,
                         FATTY_ACID => [
-    fatty_acid!(C14 {})?, // 14:0
-    fatty_acid!(C15 {})?, // 15:0
-    fatty_acid!(C16 {})?, // 16:0
-    fatty_acid!(C16 {9=>C})?, // 16:1-9
-    fatty_acid!(C17 {})?, // 17:0
-    fatty_acid!(C18 {})?, // 18:0
-    fatty_acid!(C16 {7=>C,10=>C,13=>C})?, // 16:3-7,10,13
-    fatty_acid!(C18 {9=>C})?, // 18:1-9
-    fatty_acid!(C18 {11=>C})?, // 18:1-11
-    fatty_acid!(C19 {})?, // 19:0
-    fatty_acid!(C18 {9=>C,12=>C})?, // 18:2-9,12
-    fatty_acid!(C20 {})?, // 20:0
-    fatty_acid!(C18 {9=>C,12=>C,15=>C})?, // 18:3-9,12,15
-    fatty_acid!(C20 {11=>C})?, // 20:1-11
-    fatty_acid!(C20 {11=>C,14=>C,17=>C})?, // 20:3-11,14,17
-    fatty_acid!(C22 {11=>C})?, // 22:1-13
-    fatty_acid!(C22 {})?, // 22:0
-    fatty_acid!(C24 {})?, // 24:0
-    fatty_acid!(C24 {15=>C})?, // 24:1-15
-    fatty_acid!(C26 {})?, // 26:0
+fatty_acid!(C14 {})?, // 14:0
+fatty_acid!(C15 {})?, // 15:0
+fatty_acid!(C16 {})?, // 16:0
+fatty_acid!(C16 {9=>C})?, // 16:1-7
+fatty_acid!(C16 {9=>C})?, // 16:1-7
+fatty_acid!(C17 {})?, // 16:1-9
+fatty_acid!(C18 {})?, // 17:0
+fatty_acid!(C16 {7=>C,10=>C,13=>C})?, // 16:2-7,10
+fatty_acid!(C18 {9=>C})?, // 18:0
+fatty_acid!(C18 {11=>C})?, // 16:3-7,10,13
+fatty_acid!(C19 {})?, // 18:1-9
+fatty_acid!(C18 {9=>C,12=>C})?, // 18:1-11
+fatty_acid!(C20 {})?, // 18:2-9,12
+fatty_acid!(C18 {9=>C,12=>C,15=>C})?, // 20:0
+fatty_acid!(C20 {11=>C})?, // 18:3-9,12,15
+fatty_acid!(C20 {11=>C,14=>C,17=>C})?, // 20:1-11
+fatty_acid!(C22 {11=>C})?, // 20:2-11,14
+fatty_acid!(C22 {})?, // 22:0
+fatty_acid!(C24 {})?, // 20:3-11,14,17
+fatty_acid!(C24 {15=>C})?, // 22:1-13
+fatty_acid!(C26 {})?, // 24:0
+fatty_acid!(C26 {})?, // 24:1-15
+fatty_acid!(C26 {})?, // 26:0
                         ],
                         STEREOSPECIFIC_NUMBERS123=> [
-    1381815.398,
-    1677823.700,
-    131116179.233,
-    1072319.098,
-    144925035.386,
-    9300343.554,
-    2326471.151,
-    40434095.863,
-    1567756.936,
-    698050.739,
-    156467268.186,
-    1046702.772,
-    186680547.914,
-    1385905.020,
-    2509907.378,
-    589650.312,
-    802401.446,
-    2780998.865,
-    2455853.947,
-    328773.224,
+6581171.233,
+7571395.018,
+809789776.698,
+5737087.676,
+1697148.353,
+228814397.518,
+627626.040,
+54611589.187,
+12503058.644,
+229390313.516,
+21502656.523,
+1129408573.521,
+5186269.905,
+983094592.813,
+10402404.246,
+6411239.240,
+11980268.812,
+3230378.943,
+2375601.381,
+14545006.983,
+19909725.564,
+1457065.438,
+748776.414,
                         ],
                         STEREOSPECIFIC_NUMBERS2 => [
     0.0,
